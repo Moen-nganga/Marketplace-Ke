@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Marketplace KE  — Buy & Sell in Kenya</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="nav-inner">
+    <a href="/" class="nav-logo">Marketplace KE </a>
+    <form class="nav-search" onsubmit="navSearch(event)">
+      <input id="nav-q" type="text" placeholder="Search for anything…" />
+      <button type="submit">Search</button>
+    </form>
+    <div id="nav-auth"></div>
+  </div>
+</nav>
+
+<div class="hero">
+  <h1>Marketplace KE</h1>
+  <p>Buy and sell anything — electronics, clothes, vehicles &amp; more</p>
+  <form class="hero-search" onsubmit="navSearch(event)">
+    <input id="hero-q" type="text" placeholder="What are you looking for?" />
+    <button type="submit">Find it →</button>
+  </form>
+</div>
+
+<main class="container page-body">
+  <div id="categories-bar" class="categories-bar"></div>
+
+  <div class="section-header">
+    <h2 id="section-title">Latest Listings</h2>
+    <span id="result-count" style="color:var(--muted);font-size:13px;"></span>
+  </div>
+
+  <div class="filters-bar">
+    <select id="filter-sort" onchange="applyFilters()">
+      <option value="newest">Newest first</option>
+      <option value="price_asc">Price: Low to High</option>
+      <option value="price_desc">Price: High to Low</option>
+      <option value="popular">Most popular</option>
+    </select>
+    <input id="filter-min" type="number" placeholder="Min price (KSh)" onchange="applyFilters()" style="width:160px" />
+    <input id="filter-max" type="number" placeholder="Max price (KSh)" onchange="applyFilters()" style="width:160px" />
+    <select id="filter-condition" onchange="applyFilters()">
+      <option value="">Any condition</option>
+      <option value="new">New</option>
+      <option value="used_like_new">Like New</option>
+      <option value="used_good">Good</option>
+      <option value="used_fair">Fair</option>
+    </select>
+    <input id="filter-location" type="text" placeholder="Location" onchange="applyFilters()" style="width:140px" />
+  </div>
+
+  <div id="listings-grid" class="listings-grid"></div>
+  <div id="pagination" style="display:flex;gap:10px;justify-content:center;margin-top:32px;"></div>
+</main>
+
+<div class="toast-container" id="toast-container"></div>
+
+<script src="/js/api.js"></script>
+<script>
+  let currentPage      = 1;
+  let activeCategoryId = null;
+  let currentSearch    = "";
+
+  window.addEventListener("DOMContentLoaded", async () => {
+    updateNav();
+    await loadCategories();
+    await loadListings();
+  });
+
+  async function loadCategories() {
+    const bar = document.getElementById("categories-bar");
+    try {
+      const cats = await api.getCategories();
+      bar.innerHTML =
+        `<div class="cat-chip active" onclick="filterCategory(null, this)">
+           <span class="icon">🏠</span><span class="label">All</span>
+         </div>` +
+        cats.map(c => `
+          <div class="cat-chip" onclick="filterCategory(${c.id}, this)">
+            <span class="icon">${c.icon}</span>
+            <span class="label">${c.name}</span>
+          </div>`).join("");
+    } catch { bar.innerHTML = ""; }
+  }
+
+  function filterCategory(id, el) {
+    document.querySelectorAll(".cat-chip").forEach(c => c.classList.remove("active"));
+    el.classList.add("active");
+    activeCategoryId = id;
+    currentPage = 1;
+    loadListings();
+  }
+
+  async function loadListings() {
+    const grid = document.getElementById("listings-grid");
+    grid.innerHTML = skeletonCards(8);
+
+    const params = {
+      page:      currentPage,
+      sort:      document.getElementById("filter-sort").value,
+      condition: document.getElementById("filter-condition").value,
+    };
+    const minP = document.getElementById("filter-min").value;
+    const maxP = document.getElementById("filter-max").value;
+    const loc  = document.getElementById("filter-location").value;
+
+    if (currentSearch)    params.q           = currentSearch;
+    if (activeCategoryId) params.category_id  = activeCategoryId;
+    if (minP)             params.min_price    = minP;
+    if (maxP)             params.max_price    = maxP;
+    if (loc)              params.location     = loc;
+
+    try {
+      const { listings, total, pages } = await api.getListings(params);
+      document.getElementById("result-count").textContent =
+        total ? `${total} listing${total !== 1 ? "s" : ""} found` : "";
+
+      if (!listings.length) {
+        grid.innerHTML = `
+          <div class="empty-state" style="grid-column:1/-1">
+            <div class="icon">🔍</div>
+            <h3>No listings found</h3>
+            <p>Try a different search or browse all categories</p>
+          </div>`;
+        document.getElementById("pagination").innerHTML = "";
+        return;
+      }
+      grid.innerHTML = listings.map(listingCard).join("");
+      renderPagination(pages);
+    } catch (e) {
+      grid.innerHTML = `<p style="color:red;grid-column:1/-1">${e.message}</p>`;
+    }
+  }
+
+  function listingCard(l) {
+    const img = l.images?.length
+      ? `<img src="${l.images[0]}" alt="${l.title}" loading="lazy" />`
+      : `<span>${l.category_icon || "📦"}</span>`;
+    const badge  = l.condition === "new" ? "badge-new" : "badge-used";
+    return `
+      <div class="listing-card" onclick="window.location='/listing.html?id=${l.id}'">
+        <div class="card-img">${img}</div>
+        <div class="card-body">
+          <div class="card-price">${formatPrice(l.price)}</div>
+          <div class="card-title">${l.title}</div>
+          <div class="card-meta">
+            <span class="badge ${badge}">${conditionLabel(l.condition)}</span>
+            <span>📍 ${l.location}</span>
+          </div>
+          <div class="card-meta" style="margin-top:4px">
+            <span>${timeAgo(l.created_at)}</span>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function renderPagination(pages) {
+    const el = document.getElementById("pagination");
+    if (pages <= 1) { el.innerHTML = ""; return; }
+    let html = "";
+    if (currentPage > 1)
+      html += `<button class="btn btn-ghost" onclick="goPage(${currentPage-1})">← Prev</button>`;
+    html += `<span style="padding:8px 16px;color:var(--muted);font-size:13px">Page ${currentPage} of ${pages}</span>`;
+    if (currentPage < pages)
+      html += `<button class="btn btn-ghost" onclick="goPage(${currentPage+1})">Next →</button>`;
+    el.innerHTML = html;
+  }
+
+  function goPage(p) { currentPage = p; loadListings(); window.scrollTo(0,0); }
+  function applyFilters() { currentPage = 1; loadListings(); }
+
+  function navSearch(e) {
+    e.preventDefault();
+    currentSearch = document.getElementById("nav-q").value.trim() ||
+                    document.getElementById("hero-q").value.trim();
+    document.getElementById("section-title").textContent =
+      currentSearch ? `Results for "${currentSearch}"` : "Latest Listings";
+    currentPage = 1;
+    loadListings();
+  }
+
+  function skeletonCards(n) {
+    return Array.from({length: n}, () => `
+      <div class="listing-card">
+        <div class="card-img skeleton" style="aspect-ratio:4/3"></div>
+        <div class="card-body">
+          <div class="skeleton" style="height:18px;width:60%;margin-bottom:8px"></div>
+          <div class="skeleton" style="height:14px;width:85%;margin-bottom:6px"></div>
+          <div class="skeleton" style="height:12px;width:45%"></div>
+        </div>
+      </div>`).join("");
+  }
+</script>
+</body>
+</html>

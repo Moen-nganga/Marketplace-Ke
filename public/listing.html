@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Listing — Marketplace KE</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="nav-inner">
+    <a href="/" class="nav-logo">Marketplace KE</a>
+    <div id="nav-auth"></div>
+  </div>
+</nav>
+
+<main class="container page-body">
+  <a href="/" style="color:var(--brand);font-size:14px;display:inline-flex;align-items:center;gap:4px;margin-bottom:20px">← Back to listings</a>
+  <div id="listing-content">
+    <div class="listing-detail">
+      <div><div class="skeleton" style="aspect-ratio:4/3;border-radius:var(--radius)"></div></div>
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div class="skeleton" style="height:32px;width:80%"></div>
+        <div class="skeleton" style="height:24px;width:40%"></div>
+        <div class="skeleton" style="height:120px"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="toast-container" id="toast-container"></div>
+<script src="/js/api.js"></script>
+<script>
+  const id = new URLSearchParams(location.search).get("id");
+
+  window.addEventListener("DOMContentLoaded", async () => {
+    updateNav();
+    if (!id) { window.location.href = "/"; return; }
+    try {
+      const l = await api.getListing(id);
+      document.title = `${l.title} — Marketplace KE`;
+      render(l);
+    } catch (e) {
+      document.getElementById("listing-content").innerHTML =
+        `<div class="empty-state"><div class="icon">😕</div><h3>Listing not found</h3><p>${e.message}</p></div>`;
+    }
+  });
+
+  function render(l) {
+    const user    = getUser();
+    const isOwner = user && user.id === l.user_id;
+    const imgs    = l.images || [];
+    const badge   = l.condition === "new" ? "badge-new" : (l.status === "sold" ? "badge-sold" : "badge-used");
+
+    const gallery = imgs.length
+      ? `<div class="gallery-main"><img id="main-img" src="${imgs[0]}" alt="${l.title}" /></div>
+         <div class="gallery-thumbs">
+           ${imgs.map((src, i) => `<img src="${src}" class="${i===0?'active':''}" onclick="switchImg(this,'${src}')" />`).join("")}
+         </div>`
+      : `<div class="gallery-main">${l.category_icon || "📦"}</div>`;
+
+    const ownerActions = isOwner ? `
+      <div style="display:flex;gap:10px;margin-top:8px">
+        ${l.status === "active"
+          ? `<button class="btn btn-ghost" onclick="markSold()">Mark as Sold</button>`
+          : `<span class="badge badge-sold" style="padding:8px 16px">Sold</span>`}
+        <button class="btn btn-ghost" style="color:#dc2626;border-color:#dc2626" onclick="deleteListing()">Delete</button>
+      </div>` : "";
+
+    const contactSection = !isOwner ? `
+      <div style="margin-top:16px;display:flex;flex-direction:column;gap:10px">
+        ${l.seller_phone
+          ? `<a href="tel:${l.seller_phone}" class="btn btn-primary btn-full">📞 Call Seller</a>
+             <a href="https://wa.me/${l.seller_phone.replace(/\D/g,'')}" target="_blank" class="btn btn-ghost btn-full">💬 WhatsApp</a>`
+          : `<p style="color:var(--muted);font-size:13px;text-align:center">No phone number listed</p>`}
+      </div>` : "";
+
+    document.getElementById("listing-content").innerHTML = `
+      <div class="listing-detail">
+        <div class="gallery">${gallery}</div>
+        <div>
+          <h1 style="font-size:22px;line-height:1.3;margin-bottom:8px">${l.title}</h1>
+          <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--brand);margin-bottom:14px">
+            ${formatPrice(l.price)}
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px">
+            <span class="badge ${badge}">${l.status === "sold" ? "Sold" : conditionLabel(l.condition)}</span>
+            <span style="background:var(--bg);padding:3px 10px;border-radius:20px;font-size:12px;font-weight:500">${l.category_icon} ${l.category_name}</span>
+            <span style="background:var(--bg);padding:3px 10px;border-radius:20px;font-size:12px">📍 ${l.location}</span>
+          </div>
+          <div style="font-size:13px;color:var(--muted);margin-bottom:18px">👁 ${l.views} views · Posted ${timeAgo(l.created_at)}</div>
+          <div style="background:var(--bg);border-radius:var(--radius);padding:16px;margin-bottom:20px">
+            <h3 style="font-size:15px;margin-bottom:8px">Description</h3>
+            <p style="font-size:14px;white-space:pre-line">${l.description}</p>
+          </div>
+          <div class="seller-card">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+              <div class="avatar-circle" style="width:42px;height:42px;font-size:18px">${l.seller_name[0].toUpperCase()}</div>
+              <div>
+                <div style="font-weight:600">${l.seller_name}</div>
+                <div style="font-size:12px;color:var(--muted)">Member since ${new Date(l.seller_since).getFullYear()}</div>
+              </div>
+            </div>
+            ${contactSection}
+            ${ownerActions}
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function switchImg(el, src) {
+    document.getElementById("main-img").src = src;
+    document.querySelectorAll(".gallery-thumbs img").forEach(i => i.classList.remove("active"));
+    el.classList.add("active");
+  }
+
+  async function markSold() {
+    if (!confirm("Mark this listing as sold?")) return;
+    try {
+      await api.updateListing(id, { status: "sold" });
+      toast("Marked as sold!", "success");
+      setTimeout(() => location.reload(), 800);
+    } catch (e) { toast(e.message, "error"); }
+  }
+
+  async function deleteListing() {
+    if (!confirm("Delete this listing? This cannot be undone.")) return;
+    try {
+      await api.deleteListing(id);
+      toast("Listing deleted", "success");
+      setTimeout(() => window.location.href = "/", 1000);
+    } catch (e) { toast(e.message, "error"); }
+  }
+
+  function toast(msg, type = "success") {
+    const c = document.getElementById("toast-container");
+    const t = document.createElement("div");
+    t.className = `toast ${type}`; t.textContent = msg;
+    c.appendChild(t);
+    setTimeout(() => t.remove(), 3500);
+  }
+</script>
+</body>
+</html>

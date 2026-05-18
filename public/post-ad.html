@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Post Ad — Marketplace KE</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="nav-inner">
+    <a href="/" class="nav-logo">Marketplace KE</a>
+    <div id="nav-auth"></div>
+  </div>
+</nav>
+
+<div class="container page-body" style="max-width:700px">
+  <h1 style="margin-bottom:6px">Post Your Ad</h1>
+  <p style="color:var(--muted);margin-bottom:24px">Fill in the details below to list your item for free.</p>
+
+  <div class="form-card">
+    <div id="error-msg" style="display:none;color:#dc2626;background:#fee2e2;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:14px;"></div>
+
+    <div class="form-group">
+      <label>Title *</label>
+      <input id="title" type="text" placeholder="e.g. iPhone 13 Pro Max 256GB" maxlength="120" />
+      <div class="form-hint">Be specific — include brand, model, size</div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Category *</label>
+        <select id="category"></select>
+      </div>
+      <div class="form-group">
+        <label>Condition *</label>
+        <select id="condition">
+          <option value="">Select condition</option>
+          <option value="new">New</option>
+          <option value="used_like_new">Used – Like New</option>
+          <option value="used_good">Used – Good</option>
+          <option value="used_fair">Used – Fair</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Price (KSh) *</label>
+        <input id="price" type="number" placeholder="e.g. 15000" min="0" />
+      </div>
+      <div class="form-group">
+        <label>Location *</label>
+        <input id="location" type="text" placeholder="e.g. Nairobi, Westlands" />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Description *</label>
+      <textarea id="description" placeholder="Describe your item — age, features, reason for selling…"></textarea>
+    </div>
+
+    <div class="form-group">
+      <label>Photos <span style="color:var(--muted);font-weight:400">(up to 6)</span></label>
+      <input id="images" type="file" accept="image/*" multiple style="padding:8px 0;border:none;background:none" />
+      <div class="form-hint">JPG, PNG, WEBP — max 5 MB each</div>
+      <div class="image-previews" id="image-previews"></div>
+    </div>
+
+    <button class="btn btn-primary btn-full" id="post-btn" onclick="postAd()" style="margin-top:8px;padding:14px">
+      Post Ad for Free
+    </button>
+  </div>
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+<script src="/js/api.js"></script>
+<script>
+  window.addEventListener("DOMContentLoaded", async () => {
+    if (!isLoggedIn()) { window.location.href = "/login.html"; return; }
+    updateNav();
+    const cats = await api.getCategories();
+    document.getElementById("category").innerHTML =
+      `<option value="">Select category</option>` +
+      cats.map(c => `<option value="${c.id}">${c.icon} ${c.name}</option>`).join("");
+    document.getElementById("images").addEventListener("change", () => {
+      const box = document.getElementById("image-previews");
+      box.innerHTML = "";
+      Array.from(document.getElementById("images").files).slice(0, 6).forEach(file => {
+        const r = new FileReader();
+        r.onload = e => {
+          const d = document.createElement("div");
+          d.className = "preview-thumb";
+          d.innerHTML = `<img src="${e.target.result}" />`;
+          box.appendChild(d);
+        };
+        r.readAsDataURL(file);
+      });
+    });
+  });
+
+  async function postAd() {
+    const title       = document.getElementById("title").value.trim();
+    const category_id = document.getElementById("category").value;
+    const condition   = document.getElementById("condition").value;
+    const price       = document.getElementById("price").value;
+    const location    = document.getElementById("location").value.trim();
+    const description = document.getElementById("description").value.trim();
+    const files       = document.getElementById("images").files;
+    const btn         = document.getElementById("post-btn");
+
+    document.getElementById("error-msg").style.display = "none";
+    if (!title || !category_id || !condition || !price || !location || !description) {
+      showError("Please fill in all required fields."); return;
+    }
+
+    btn.disabled = true; btn.textContent = "Posting…";
+    const fd = new FormData();
+    fd.append("title", title); fd.append("category_id", category_id);
+    fd.append("condition", condition); fd.append("price", price);
+    fd.append("location", location); fd.append("description", description);
+    Array.from(files).slice(0, 6).forEach(f => fd.append("images", f));
+
+    try {
+      const listing = await api.createListing(fd);
+      window.location.href = `/listing.html?id=${listing.id}`;
+    } catch (e) {
+      showError(e.message);
+      btn.disabled = false; btn.textContent = "Post Ad for Free";
+    }
+  }
+
+  function showError(msg) {
+    const el = document.getElementById("error-msg");
+    el.textContent = msg; el.style.display = "block";
+  }
+</script>
+</body>
+</html>
