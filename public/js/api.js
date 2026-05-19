@@ -27,6 +27,7 @@ const api = {
   register:        (body) => apiFetch("/auth/register", { method: "POST", body: JSON.stringify(body) }),
   login:           (body) => apiFetch("/auth/login",    { method: "POST", body: JSON.stringify(body) }),
   me:              ()     => apiFetch("/auth/me"),
+  getPublicUser:   (id)   => apiFetch(`/auth/user/${id}`),
 
   // ── Listings ──────────────────────────────────────────────────────────────
   getListings:     (params = {}) => apiFetch(`/listings?${new URLSearchParams(params)}`),
@@ -36,6 +37,7 @@ const api = {
   deleteListing:   (id)          => apiFetch(`/listings/${id}`, { method: "DELETE" }),
   getUserListings: (uid)         => apiFetch(`/listings/user/${uid}`),
   getCategories:   ()            => apiFetch("/categories"),
+  searchUsers:     (q)           => apiFetch(`/listings/search/users?q=${encodeURIComponent(q)}`),
 
   // ── Ratings ───────────────────────────────────────────────────────────────
   getRatings:      (userId)       => apiFetch(`/ratings/${userId}`),
@@ -47,6 +49,8 @@ const api = {
   startConversation: (body)       => apiFetch("/messages/conversation", { method: "POST", body: JSON.stringify(body) }),
   getMessages:     (convId)       => apiFetch(`/messages/${convId}`),
   sendMessage:     (convId, body) => apiFetch(`/messages/${convId}`, { method: "POST", body: JSON.stringify(body) }),
+  getUnreadCount:  ()             => apiFetch("/messages/unread/count"),
+  markAsRead:      (convId)       => apiFetch(`/messages/${convId}/read`, { method: "POST" }),
 };
 
 // ── Encryption (AES-GCM) ─────────────────────────────────────────────────────
@@ -122,11 +126,15 @@ function updateNav() {
   if (user) {
     navAuth.innerHTML = `
       <a href="/post-ad.html" class="btn btn-primary">+ Post Ad</a>
+      <div class="notif-wrap">
+        <a href="/inbox.html" class="btn btn-ghost" style="padding:9px 14px" id="inbox-btn">💬</a>
+      </div>
       <a href="/profile.html?id=${user.id}" class="nav-user">
         <span class="avatar-circle">${user.name[0].toUpperCase()}</span>
         ${user.name.split(" ")[0]}
       </a>
       <button class="btn btn-ghost" onclick="logout()">Logout</button>`;
+    loadUnreadBadge();
   } else {
     navAuth.innerHTML = `
       <a href="/login.html" class="btn btn-ghost">Login</a>
@@ -144,4 +152,21 @@ function toast(msg, type = "success") {
   t.className = `toast ${type}`; t.textContent = msg;
   c.appendChild(t);
   setTimeout(() => t.remove(), 3500);
+}
+async function loadUnreadBadge() {
+  if (!isLoggedIn()) return;
+  try {
+    const { count } = await api.getUnreadCount();
+    const wrap = document.querySelector(".notif-wrap");
+    if (!wrap) return;
+    // remove old badge if any
+    const old = wrap.querySelector(".notif-badge");
+    if (old) old.remove();
+    if (count > 0) {
+      const badge = document.createElement("div");
+      badge.className   = "notif-badge";
+      badge.textContent = count > 9 ? "9+" : count;
+      wrap.appendChild(badge);
+    }
+  } catch {}
 }

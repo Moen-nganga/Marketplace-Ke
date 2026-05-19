@@ -168,4 +168,26 @@ router.delete("/:id", requireAuth, (req, res) => {
   res.json({ success: true });
 });
 
+// ── GET /api/listings/search/users — search users by name ───────────────────
+router.get("/search/users", (req, res) => {
+  const { q } = req.query;
+  if (!q) return res.json([]);
+
+  const users = db.prepare(`
+    SELECT
+      u.id, u.name, u.created_at,
+      COUNT(l.id) AS listing_count,
+      (SELECT ROUND(AVG(score), 1) FROM ratings WHERE rated_id = u.id) AS avg_rating,
+      (SELECT COUNT(*) FROM ratings WHERE rated_id = u.id) AS rating_count
+    FROM users u
+    LEFT JOIN listings l ON l.user_id = u.id AND l.status = 'active'
+    WHERE u.name LIKE ?
+    GROUP BY u.id
+    ORDER BY listing_count DESC
+    LIMIT 10
+  `).all(`%${q}%`);
+
+  res.json(users);
+});
+
 module.exports = router;

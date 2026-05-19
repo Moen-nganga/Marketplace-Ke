@@ -33,6 +33,7 @@
 <script src="/js/api.js"></script>
 <script>
   const id = new URLSearchParams(location.search).get("id");
+  let l = null;
 
   window.addEventListener("DOMContentLoaded", async () => {
     updateNav();
@@ -47,7 +48,8 @@
     }
   });
 
-  function render(l) {
+  function render(listing) {
+    l = listing;
     const user    = getUser();
     const isOwner = user && user.id === l.user_id;
     const imgs    = l.images || [];
@@ -74,6 +76,7 @@
           ? `<a href="tel:${l.seller_phone}" class="btn btn-primary btn-full">📞 Call Seller</a>
              <a href="https://wa.me/${l.seller_phone.replace(/\D/g,'')}" target="_blank" class="btn btn-ghost btn-full">💬 WhatsApp</a>`
           : `<p style="color:var(--muted);font-size:13px;text-align:center">No phone number listed</p>`}
+        <button class="btn btn-ghost btn-full" onclick="messageseller()">✉️ Send Message</button>
       </div>` : "";
 
     document.getElementById("listing-content").innerHTML = `
@@ -139,6 +142,16 @@
     t.className = `toast ${type}`; t.textContent = msg;
     c.appendChild(t);
     setTimeout(() => t.remove(), 3500);
+  }
+  async function messageseller() {
+    if (!getUser()) { window.location.href = "/login.html"; return; }
+    try {
+      const conv = await api.startConversation({
+        other_id:   l.user_id,
+        listing_id: l.id,
+      });
+      window.location.href = `/chat.html?id=${conv.id}`;
+    } catch (e) { toast(e.message, "error"); }
   }
 </script>
 </body>

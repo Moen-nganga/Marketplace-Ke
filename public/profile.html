@@ -110,23 +110,20 @@
   window.addEventListener("DOMContentLoaded", async () => {
     updateNav();
     if (!profileId) { window.location.href = "/"; return; }
-    await Promise.all([loadProfile(), loadListings(), loadRatings()]);
+    await loadProfile();
+    await Promise.all([loadListings(), loadRatings()]);
   });
 
   // ── Profile header ──────────────────────────────────────────────────────────
   async function loadProfile() {
     try {
-      // We get the user info from their listings endpoint as a lightweight way
-      // to fetch public profile info without a dedicated /users/:id route
-      const listings = await api.getUserListings(profileId);
-      const { data: ratingData } = await api.getRatings(profileId).then(d => ({ data: d }));
+      const [user, listings] = await Promise.all([
+        api.getPublicUser(profileId),
+        api.getUserListings(profileId),
+      ]);
 
-      // Grab name from first listing's seller info, or fall back to "User"
-      // We'll fetch the user via a trick: use /api/auth/me won't work for others,
-      // so we expose just enough from listings. If no listings, show generic.
-      const name = listings[0]?.seller_name || (isOwnProfile ? me.name : "Seller");
-      profileData = { id: profileId, name, listings };
-      renderHeader(name, listings.length);
+      profileData = { ...user, listings };
+      renderHeader(user.name, listings.length);
     } catch {
       document.getElementById("profile-header").innerHTML =
         `<div class="empty-state"><div class="icon">😕</div><h3>User not found</h3></div>`;
@@ -210,7 +207,7 @@
         starsEl.innerHTML = `
           <div class="stars-row">
             ${renderStars(average || 0)}
-            <span class="rating-score">${average || "—"}</span>
+            <span style="font-size:14px;font-weight:600;color:var(--text)">${average || "—"}</span>
             <span class="rating-count">(${total} review${total !== 1 ? "s" : ""})</span>
           </div>`;
       }
@@ -219,22 +216,47 @@
       const myRating = me ? ratings.find(r => r.rater_id === me.id) : null;
 
       // Rate box — only show if logged in and not own profile
-      const rateBox = (!isOwnProfile && me) ? `
+      const rateBox = (!isOwnProfile && me) ? (myRating ? `
         <div class="rate-box">
-          <h3>${myRating ? "Update your review" : "Rate this seller"}</h3>
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+            <div>
+              <div style="font-weight:600;font-size:14px;margin-bottom:4px">Your review</div>
+              <div class="stars-row" style="margin:0;gap:3px">
+                ${renderStars(myRating.score)}
+              </div>
+              ${myRating.review ? `<div style="font-size:13px;color:var(--muted);margin-top:6px">"${myRating.review}"</div>` : ""}
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-ghost" onclick="showRateForm()">✏️ Edit</button>
+              <button class="btn btn-ghost" style="color:#dc2626;border-color:#dc2626" onclick="removeRating()">Remove</button>
+            </div>
+          </div>
+        </div>
+        <div class="rate-box" id="rate-form" style="display:none;margin-top:12px">
+          <h3>Update your review</h3>
           <div class="stars-row" id="interactive-stars">
-            ${renderStars(myRating?.score || 0, true)}
+            ${renderStars(myRating.score, true)}
           </div>
           <div class="form-group" style="margin-top:12px">
-            <textarea id="review-text" placeholder="Leave a review (optional)" style="min-height:70px">${myRating?.review || ""}</textarea>
+            <textarea id="review-text" placeholder="Leave a review (optional)" style="min-height:70px">${myRating.review || ""}</textarea>
           </div>
           <div style="display:flex;gap:10px">
-            <button class="btn btn-primary" onclick="submitRating()">
-              ${myRating ? "Update Review" : "Submit Review"}
-            </button>
-            ${myRating ? `<button class="btn btn-ghost" style="color:#dc2626;border-color:#dc2626" onclick="removeRating()">Remove</button>` : ""}
+            <button class="btn btn-primary" onclick="submitRating()">Update Review</button>
+            <button class="btn btn-ghost" onclick="hideRateForm()">Cancel</button>
           </div>
-        </div>` : "";
+        </div>` :
+        `<div class="rate-box">
+          <h3>Rate this seller</h3>
+          <div class="stars-row" id="interactive-stars">
+            ${renderStars(0, true)}
+          </div>
+          <div class="form-group" style="margin-top:12px">
+            <textarea id="review-text" placeholder="Leave a review (optional)" style="min-height:70px"></textarea>
+          </div>
+          <div style="display:flex;gap:10px">
+            <button class="btn btn-primary" onclick="submitRating()">Submit Review</button>
+          </div>
+        </div>`) : "";
 
       const reviewList = ratings.length
         ? ratings.map(r => `
@@ -275,6 +297,13 @@
     document.querySelectorAll(".interactive").forEach((s, i) => {
       s.classList.toggle("filled", i < pendingScore);
     });
+  }
+  function showRateForm() {
+    document.getElementById("rate-form").style.display = "";
+    pendingScore = 0;
+  }
+  function hideRateForm() {
+    document.getElementById("rate-form").style.display = "none";
   }
 
   // ── Submit / remove rating ───────────────────────────────────────────────────

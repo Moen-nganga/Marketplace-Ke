@@ -78,11 +78,20 @@ db.exec(`
     sender_id       INTEGER NOT NULL,
     content         TEXT    NOT NULL,
     iv              TEXT    NOT NULL,
+    is_read         INTEGER DEFAULT 0,
     created_at      TEXT    DEFAULT (datetime('now')),
     FOREIGN KEY (conversation_id) REFERENCES conversations(id),
     FOREIGN KEY (sender_id)       REFERENCES users(id)
-  );
+ );
 `);
+
+// ── Migrations — add columns that may not exist in older DBs ─────────────────
+try {
+  db.exec("ALTER TABLE messages ADD COLUMN is_read INTEGER DEFAULT 0");
+  console.log("✅ Migrated: added is_read to messages");
+} catch {
+  // Column already exists — safe to ignore
+}
 
 const count = db.prepare("SELECT COUNT(*) AS n FROM categories").get().n;
 
@@ -101,7 +110,7 @@ if (count === 0) {
     ["Services",         "🔧"],
   ];
   cats.forEach(([name, icon]) => insert.run(name, icon));
-  console.log(" Categories seeded");
+  console.log("✅ Categories seeded");
 }
 
 module.exports = db;

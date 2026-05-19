@@ -55,6 +55,14 @@
     <input id="filter-location" type="text" placeholder="Location" onchange="applyFilters()" style="width:140px" />
   </div>
 
+  <!-- People results (only visible during search) -->
+  <div id="people-section" style="display:none;margin-bottom:28px">
+    <div class="section-header" style="margin-bottom:12px">
+      <h2>People</h2>
+    </div>
+    <div id="people-grid" style="display:flex;flex-wrap:wrap;gap:12px"></div>
+  </div>
+
   <div id="listings-grid" class="listings-grid"></div>
   <div id="pagination" style="display:flex;gap:10px;justify-content:center;margin-top:32px;"></div>
 </main>
@@ -183,6 +191,62 @@
       currentSearch ? `Results for "${currentSearch}"` : "Latest Listings";
     currentPage = 1;
     loadListings();
+    if (currentSearch) loadPeople(currentSearch);
+    else hidePeople();
+  }
+
+  async function loadPeople(q) {
+    const section  = document.getElementById("people-section");
+    const grid     = document.getElementById("people-grid");
+    section.style.display = "";
+    grid.innerHTML = `<div style="color:var(--muted);font-size:13px">Searching people…</div>`;
+
+    try {
+      const users = await api.searchUsers(q);
+      if (!users.length) {
+        section.style.display = "none";
+        return;
+      }
+      grid.innerHTML = users.map(userCard).join("");
+    } catch {
+      section.style.display = "none";
+    }
+  }
+
+  function hidePeople() {
+    document.getElementById("people-section").style.display = "none";
+  }
+
+  function userCard(u) {
+    const stars  = u.avg_rating
+      ? `${"★".repeat(Math.round(u.avg_rating))}${"☆".repeat(5 - Math.round(u.avg_rating))}`
+      : "☆☆☆☆☆";
+    const rating = u.avg_rating
+      ? `<span style="color:#f59e0b;letter-spacing:1px;font-size:13px">${stars}</span>
+         <span style="font-size:12px;color:var(--muted)">${u.avg_rating} (${u.rating_count})</span>`
+      : `<span style="font-size:12px;color:var(--muted)">No ratings yet</span>`;
+
+    return `
+      <div onclick="window.location='/profile.html?id=${u.id}'"
+           style="background:var(--surface);border:1px solid var(--border);
+                  border-radius:var(--radius);padding:16px 20px;
+                  display:flex;align-items:center;gap:14px;
+                  cursor:pointer;transition:all .18s;min-width:220px;flex:1;max-width:280px"
+           onmouseover="this.style.borderColor='var(--brand)'"
+           onmouseout="this.style.borderColor='var(--border)'">
+        <div style="width:46px;height:46px;border-radius:50%;background:var(--brand);
+                    color:#fff;display:flex;align-items:center;justify-content:center;
+                    font-family:'Syne',sans-serif;font-weight:800;font-size:20px;flex-shrink:0">
+          ${u.name[0].toUpperCase()}
+        </div>
+        <div>
+          <div style="font-weight:700;font-size:15px;margin-bottom:3px">${u.name}</div>
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">${rating}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:3px">
+            📦 ${u.listing_count} listing${u.listing_count !== 1 ? "s" : ""}
+          </div>
+        </div>
+      </div>`;
   }
 
   function skeletonCards(n) {

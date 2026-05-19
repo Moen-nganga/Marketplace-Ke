@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inbox — Marketplace KE</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <style>
+    .inbox-list { display: flex; flex-direction: column; gap: 2px; }
+    .conv-item {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 16px 20px;
+      display: flex; align-items: center; gap: 16px;
+      cursor: pointer; transition: all .18s;
+    }
+    .conv-item:hover { border-color: var(--brand); transform: translateX(3px); }
+    .conv-avatar {
+      width: 48px; height: 48px; border-radius: 50%;
+      background: var(--brand); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Syne', sans-serif; font-weight: 700; font-size: 20px;
+      flex-shrink: 0;
+    }
+    .conv-body { flex: 1; min-width: 0; }
+    .conv-top {
+      display: flex; justify-content: space-between;
+      align-items: baseline; margin-bottom: 3px;
+    }
+    .conv-name { font-weight: 600; font-size: 15px; }
+    .conv-time { font-size: 12px; color: var(--muted); flex-shrink: 0; }
+    .conv-preview {
+      font-size: 13px; color: var(--muted);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .conv-listing {
+      font-size: 11px; color: var(--brand); font-weight: 500; margin-top: 2px;
+    }
+    .lock-badge {
+      font-size: 11px; background: #f0fdf4; color: #166534;
+      padding: 2px 8px; border-radius: 20px; font-weight: 600;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="nav-inner">
+    <a href="/" class="nav-logo">Marketplace KE</a>
+    <div id="nav-auth"></div>
+  </div>
+</nav>
+
+<main class="container page-body" style="max-width:700px">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
+    <h1>Inbox</h1>
+    <span class="lock-badge">🔒 End-to-end encrypted</span>
+  </div>
+
+  <div id="inbox-list"></div>
+</main>
+
+<div class="toast-container" id="toast-container"></div>
+
+<script src="/js/api.js"></script>
+<script>
+  const me = getUser();
+
+  window.addEventListener("DOMContentLoaded", async () => {
+    if (!me) { window.location.href = "/login.html"; return; }
+    updateNav();
+    await loadInbox();
+  });
+
+  async function loadInbox() {
+    const el = document.getElementById("inbox-list");
+    el.innerHTML = skeletonList(5);
+
+    try {
+      const conversations = await api.getInbox();
+
+      if (!conversations.length) {
+        el.innerHTML = `
+          <div class="empty-state">
+            <div class="icon">💬</div>
+            <h3>No messages yet</h3>
+            <p>When you contact a seller or get messaged, it'll appear here.</p>
+            <a href="/" class="btn btn-primary" style="margin-top:16px">Browse Listings</a>
+          </div>`;
+        return;
+      }
+
+      // Decrypt the last message preview for each conversation
+      const items = await Promise.all(conversations.map(async (c) => {
+        let preview = "No messages yet";
+        if (c.last_message) {
+          const other_id = c.other_id;
+          const decrypted = await decryptMessage(
+            c.last_message, c.last_iv, me.id, other_id
+          );
+          const prefix = c.last_sender_id === me.id ? "You: " : "";
+          preview = prefix + decrypted;
+        }
+        return { ...c, preview };
+      }));
+
+      el.innerHTML = `<div class="inbox-list">${items.map(convItem).join("")}</div>`;
+    } catch (e) {
+      el.innerHTML = `<p style="color:red">${e.message}</p>`;
+    }
+  }
+
+  function convItem(c) {
+    const initial = c.other_name[0].toUpperCase();
+    const listingLine = c.listing_title
+      ? `<div class="conv-listing">re: ${c.listing_title}</div>` : "";
+    const time = c.last_message_at ? timeAgo(c.last_message_at) : "";
+
+    return `
+      <div class="conv-item" onclick="window.location='/chat.html?id=${c.id}'">
+        <div class="conv-avatar">${initial}</div>
+        <div class="conv-body">
+          <div class="conv-top">
+            <span class="conv-name">${c.other_name}</span>
+            <span class="conv-time">${time}</span>
+          </div>
+          <div class="conv-preview">${c.preview}</div>
+          ${listingLine}
+        </div>
+      </div>`;
+  }
+
+  function skeletonList(n) {
+    return Array.from({ length: n }, () => `
+      <div class="conv-item" style="pointer-events:none;margin-bottom:2px">
+        <div class="skeleton" style="width:48px;height:48px;border-radius:50%;flex-shrink:0"></div>
+        <div style="flex:1">
+          <div class="skeleton" style="height:15px;width:40%;margin-bottom:8px"></div>
+          <div class="skeleton" style="height:13px;width:70%"></div>
+        </div>
+      </div>`).join("");
+  }
+</script>
+</body>
+</html>

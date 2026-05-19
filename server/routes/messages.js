@@ -128,5 +128,39 @@ router.post("/:conversationId", requireAuth, (req, res) => {
 
   res.status(201).json(message);
 });
+// ── GET /api/messages/unread/count — number of convos with unread msgs ───────
+router.get("/unread/count", requireAuth, (req, res) => {
+  const uid = req.user.id;
+
+  const row = db.prepare(`
+    SELECT COUNT(DISTINCT m.conversation_id) AS count
+    FROM   messages m
+    JOIN   conversations c ON c.id = m.conversation_id
+    WHERE  m.is_read   = 0
+    AND    m.sender_id != ?
+    AND    (c.user1_id = ? OR c.user2_id = ?)
+  `).get(uid, uid, uid);
+
+  res.json({ count: row.count });
+});
+
+// ── POST /api/messages/:conversationId/read — mark all msgs as read ──────────
+router.post("/:conversationId/read", requireAuth, (req, res) => {
+  const uid    = req.user.id;
+  const convId = parseInt(req.params.conversationId);
+
+  const conv = db.prepare(
+    "SELECT * FROM conversations WHERE id = ? AND (user1_id = ? OR user2_id = ?)"
+  ).get(convId, uid, uid);
+
+  if (!conv) return res.status(403).json({ error: "Access denied" });
+
+  db.prepare(`
+    UPDATE messages SET is_read = 1
+    WHERE conversation_id = ? AND sender_id != ? AND is_read = 0
+  `).run(convId, uid);
+
+  res.json({ success: true });
+});
 
 module.exports = router;
