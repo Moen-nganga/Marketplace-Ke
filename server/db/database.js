@@ -93,24 +93,67 @@ try {
   // Column already exists — safe to ignore
 }
 
+try {
+  db.exec("ALTER TABLE listings ADD COLUMN reason TEXT");
+  console.log("✅ Migrated: added reason to listings");
+} catch {
+  // already exists
+}
+
+try {
+  db.exec("ALTER TABLE listings ADD COLUMN tags TEXT DEFAULT '[]'");
+  console.log("✅ Migrated: added tags to listings");
+} catch {
+  // already exists
+}
+
+try {
+  db.exec("ALTER TABLE categories ADD COLUMN parent_id INTEGER REFERENCES categories(id)");
+  console.log("✅ Migrated: added parent_id to categories");
+} catch {
+  // already exists
+}
+
 const count = db.prepare("SELECT COUNT(*) AS n FROM categories").get().n;
 
 if (count === 0) {
-  const insert = db.prepare("INSERT INTO categories (name, icon) VALUES (?, ?)");
-  const cats = [
+  const insertParent = db.prepare("INSERT INTO categories (name, icon, parent_id) VALUES (?, ?, NULL)");
+  const insertChild  = db.prepare("INSERT INTO categories (name, icon, parent_id) VALUES (?, ?, ?)");
+
+  const parents = [
+    ["Phones",           "📱"],
     ["Electronics",      "💻"],
     ["Vehicles",         "🚗"],
     ["Fashion",          "👗"],
     ["Home & Garden",    "🏠"],
-    ["Phones",           "📱"],
     ["Sports & Leisure", "⚽"],
     ["Jobs",             "💼"],
     ["Kids & Baby",      "🍼"],
     ["Animals & Pets",   "🐾"],
     ["Services",         "🔧"],
   ];
-  cats.forEach(([name, icon]) => insert.run(name, icon));
-  console.log("✅ Categories seeded");
+
+  const children = {
+    "Phones":           [["Mobile Phones","📱"],["Accessories","🎧"],["Smart Watches","⌚"],["Tablets","📟"],["Headphones","🎧"]],
+    "Electronics":      [["Laptops","💻"],["Desktops","🖥️"],["Cameras","📷"],["Gaming","🎮"],["TVs","📺"]],
+    "Vehicles":         [["Cars","🚗"],["Motorcycles","🏍️"],["Trucks","🚛"],["Spare Parts","🔩"],["Boats","⛵"]],
+    "Fashion":          [["Men's Clothing","👔"],["Women's Clothing","👗"],["Shoes","👟"],["Bags","👜"],["Watches","⌚"]],
+    "Home & Garden":    [["Furniture","🛋️"],["Kitchen","🍳"],["Garden","🌿"],["Appliances","🏠"],["Bedding","🛏️"]],
+    "Sports & Leisure": [["Exercise Equipment","🏋️"],["Outdoor","🏕️"],["Team Sports","⚽"],["Water Sports","🏄"],["Cycling","🚴"]],
+    "Jobs":             [["Full Time","💼"],["Part Time","⏰"],["Freelance","💻"],["Internships","🎓"],["Remote","🌍"]],
+    "Kids & Baby":      [["Clothes","👶"],["Toys","🧸"],["Feeding","🍼"],["Strollers","🛺"],["Safety","🔒"]],
+    "Animals & Pets":   [["Dogs","🐕"],["Cats","🐈"],["Birds","🦜"],["Fish","🐠"],["Pet Supplies","🦴"]],
+    "Services":         [["Cleaning","🧹"],["Repairs","🔧"],["Tutoring","📚"],["Beauty","💄"],["Moving","📦"]],
+  };
+
+  parents.forEach(([name, icon]) => {
+    const { lastInsertRowid: parentId } = insertParent.run(name, icon);
+    (children[name] || []).forEach(([cname, cicon]) => {
+      insertChild.run(cname, cicon, parentId);
+    });
+  });
+
+  console.log("✅ Categories seeded with subcategories");
 }
 
 module.exports = db;

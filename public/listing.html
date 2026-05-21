@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Listing — Marketplace KE</title>
+  <title>Listing — SellAnythingKE</title>
   <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body>
 
 <nav class="navbar">
   <div class="nav-inner">
-    <a href="/" class="nav-logo">Marketplace KE</a>
+    <a href="/" class="nav-logo">SellAnythingKE</a>
     <div id="nav-auth"></div>
   </div>
 </nav>
@@ -40,7 +40,7 @@
     if (!id) { window.location.href = "/"; return; }
     try {
       const l = await api.getListing(id);
-      document.title = `${l.title} — Marketplace KE`;
+      document.title = `${l.title} — SellAnythingKE`;
       render(l);
     } catch (e) {
       document.getElementById("listing-content").innerHTML =
@@ -93,10 +93,27 @@
             <span style="background:var(--bg);padding:3px 10px;border-radius:20px;font-size:12px">📍 ${l.location}</span>
           </div>
           <div style="font-size:13px;color:var(--muted);margin-bottom:18px">👁 ${l.views} views · Posted ${timeAgo(l.created_at)}</div>
-          <div style="background:var(--bg);border-radius:var(--radius);padding:16px;margin-bottom:20px">
+          <div style="background:var(--bg);border-radius:var(--radius);padding:16px;margin-bottom:12px">
             <h3 style="font-size:15px;margin-bottom:8px">Description</h3>
             <p style="font-size:14px;white-space:pre-line">${l.description}</p>
           </div>
+          ${l.reason ? `
+          <div style="background:#fff8f0;border:1px solid #ffe5cc;border-radius:var(--radius);padding:16px;margin-bottom:12px">
+            <h3 style="font-size:15px;margin-bottom:8px">Reason for selling</h3>
+            <p style="font-size:14px;white-space:pre-line;color:var(--muted)">${l.reason}</p>
+          </div>` : ""}
+          ${l.tags?.length ? `
+          <div style="margin-bottom:20px;display:flex;flex-wrap:wrap;gap:6px">
+            ${l.tags.map(t => `
+              <a href="/?q=${encodeURIComponent(t)}"
+                 style="display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;
+                        font-weight:500;background:#fff0e6;color:var(--brand);
+                        border:1px solid #ffd4b3;text-decoration:none"
+                 onmouseover="this.style.background='#ffd4b3'"
+                 onmouseout="this.style.background='#fff0e6'">
+                #${t}
+              </a>`).join("")}
+          </div>` : ""}
           <div class="seller-card">
             <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
               <div class="avatar-circle" style="width:42px;height:42px;font-size:18px">${l.seller_name[0].toUpperCase()}</div>

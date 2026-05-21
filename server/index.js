@@ -19,8 +19,13 @@ app.use("/api/listings", require("./routes/listings"));
 app.use("/api/ratings",  require("./routes/ratings"));
 app.use("/api/messages", require("./routes/messages"));
 app.use("/api/categories", (req, res) => {
-  const db = require("./db/database");
-  res.json(db.prepare("SELECT * FROM categories").all());
+  const db      = require("./db/database");
+  const parents = db.prepare("SELECT * FROM categories WHERE parent_id IS NULL ORDER BY id").all();
+  const result  = parents.map(p => ({
+    ...p,
+    children: db.prepare("SELECT * FROM categories WHERE parent_id = ? ORDER BY id").all(p.id),
+  }));
+  res.json(result);
 });
 
 // ── Catch-all → serve frontend ───────────────────────────────────────────────
@@ -31,5 +36,5 @@ app.get("/{*splat}", (req, res) => {
 // ── Start ────────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`\n  Marketplace KE running at http://localhost:${PORT}\n`);
+  console.log(`\n  SellAnythingKE running at http://localhost:${PORT}\n`);
 });

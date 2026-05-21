@@ -28,6 +28,7 @@ const api = {
   login:           (body) => apiFetch("/auth/login",    { method: "POST", body: JSON.stringify(body) }),
   me:              ()     => apiFetch("/auth/me"),
   getPublicUser:   (id)   => apiFetch(`/auth/user/${id}`),
+  uploadAvatar:    (fd)   => apiFetch("/auth/avatar", { method: "POST", body: fd }),
 
   // ── Listings ──────────────────────────────────────────────────────────────
   getListings:     (params = {}) => apiFetch(`/listings?${new URLSearchParams(params)}`),
@@ -38,6 +39,7 @@ const api = {
   getUserListings: (uid)         => apiFetch(`/listings/user/${uid}`),
   getCategories:   ()            => apiFetch("/categories"),
   searchUsers:     (q)           => apiFetch(`/listings/search/users?q=${encodeURIComponent(q)}`),
+  suggestTags:     (q)           => apiFetch(`/listings/tags/suggest?q=${encodeURIComponent(q)}`),
 
   // ── Ratings ───────────────────────────────────────────────────────────────
   getRatings:      (userId)       => apiFetch(`/ratings/${userId}`),
@@ -130,8 +132,10 @@ function updateNav() {
         <a href="/inbox.html" class="btn btn-ghost" style="padding:9px 14px" id="inbox-btn">💬</a>
       </div>
       <a href="/profile.html?id=${user.id}" class="nav-user">
-        <span class="avatar-circle">${user.name[0].toUpperCase()}</span>
-        ${user.name.split(" ")[0]}
+        ${user.avatar
+          ? `<img src="${user.avatar}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid var(--brand)" />`
+          : `<span class="avatar-circle" style="width:36px;height:36px;font-size:15px">${user.name[0].toUpperCase()}</span>`}
+        <span style="font-weight:600;font-size:14px">${user.name.split(" ")[0]}</span>
       </a>
       <button class="btn btn-ghost" onclick="logout()">Logout</button>`;
     loadUnreadBadge();
@@ -139,6 +143,16 @@ function updateNav() {
     navAuth.innerHTML = `
       <a href="/login.html" class="btn btn-ghost">Login</a>
       <a href="/register.html" class="btn btn-primary">Register</a>`;
+  }
+  // Sync avatar from server in background
+  if (user) {
+    api.me().then(fresh => {
+      if (fresh.avatar !== user.avatar) {
+        user.avatar = fresh.avatar;
+        saveAuth(getToken(), user);
+        updateNav();
+      }
+    }).catch(() => {});
   }
 }
 function logout() {

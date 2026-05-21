@@ -3,26 +3,38 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Marketplace KE  — Buy & Sell in Kenya</title>
+  <title>MSellAnythingKE  — Buy & Sell in Kenya</title>
   <link rel="stylesheet" href="/css/style.css" />
+  <style>
+    .search-suggestions {
+      position: absolute; top: 100%; left: 0; right: 0;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 0 0 var(--radius) var(--radius);
+      box-shadow: var(--shadow-lg); z-index: 200;
+      overflow: hidden;
+    }
+    .suggestion-item {
+      padding: 10px 16px; cursor: pointer; font-size: 14px;
+      display: flex; align-items: center; gap: 8px;
+      transition: background .15s;
+    }
+    .suggestion-item:hover { background: #fff0e6; color: var(--brand); }
+    .nav-search { position: relative; }
+  </style>
 </head>
 <body>
 
 <nav class="navbar">
   <div class="nav-inner">
-    <a href="/" class="nav-logo">Marketplace KE </a>
-    <form class="nav-search" onsubmit="navSearch(event)">
-      <input id="nav-q" type="text" placeholder="Search for anything…" />
-      <button type="submit">Search</button>
-    </form>
+    <a href="/" class="nav-logo">SellAnythingKE </a>
     <div id="nav-auth"></div>
   </div>
 </nav>
 
 <div class="hero">
-  <h1>Marketplace KE</h1>
+  <h1>SellAnythingKE</h1>
   <p>Buy and sell anything — electronics, clothes, vehicles &amp; more</p>
-  <form class="hero-search" onsubmit="navSearch(event)">
+  <form class="hero-search" onsubmit="heroSearch(event)" style="margin-top:20px">
     <input id="hero-q" type="text" placeholder="What are you looking for?" />
     <button type="submit">Find it →</button>
   </form>
@@ -80,6 +92,40 @@
     await loadCategories();
     await loadListings();
   });
+
+  let navSuggestTimer = null;
+  async function fetchNavSuggestions() {
+    const val = document.getElementById("nav-q").value.trim();
+    clearTimeout(navSuggestTimer);
+    const box = document.getElementById("nav-suggestions");
+    if (!val) { box.style.display = "none"; return; }
+
+    navSuggestTimer = setTimeout(async () => {
+      try {
+        const tags = await api.suggestTags(val);
+        if (!tags.length) { box.style.display = "none"; return; }
+        box.innerHTML = tags.map(t => `
+          <div class="suggestion-item" onmousedown="selectSuggestion('${t}')">
+            🏷️ <span>#${t}</span>
+          </div>`).join("");
+        box.style.display = "";
+      } catch { box.style.display = "none"; }
+    }, 250);
+  }
+
+  function selectSuggestion(tag) {
+    document.getElementById("nav-q").value = tag;
+    hideSuggestions();
+    currentSearch = tag;
+    document.getElementById("section-title").textContent = `Results for "${tag}"`;
+    currentPage = 1;
+    loadListings();
+    loadPeople(tag);
+  }
+
+  function hideSuggestions() {
+    document.getElementById("nav-suggestions").style.display = "none";
+  }
 
   async function loadCategories() {
     const bar = document.getElementById("categories-bar");
@@ -185,8 +231,7 @@
 
   function navSearch(e) {
     e.preventDefault();
-    currentSearch = document.getElementById("nav-q").value.trim() ||
-                    document.getElementById("hero-q").value.trim();
+    currentSearch = document.getElementById("nav-q").value.trim();
     document.getElementById("section-title").textContent =
       currentSearch ? `Results for "${currentSearch}"` : "Latest Listings";
     currentPage = 1;
@@ -260,6 +305,21 @@
         </div>
       </div>`).join("");
   }
+
+  function heroSearch(e) {
+    e.preventDefault();
+    const q = document.getElementById("hero-q").value.trim();
+    if (!q) return;
+    document.getElementById("nav-q").value = q;
+    currentSearch = q;
+    document.getElementById("section-title").textContent = `Results for "${q}"`;
+    currentPage = 1;
+    loadListings();
+    loadPeople(q);
+    // Scroll down to results
+    document.querySelector(".container.page-body").scrollIntoView({ behavior: "smooth" });
+  }
+  
 </script>
 </body>
 </html>

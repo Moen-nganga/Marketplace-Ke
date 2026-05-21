@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap');
 
 :root {
   --brand:      #e90808;
@@ -26,7 +26,7 @@ a { color: inherit; text-decoration: none; }
 img { max-width: 100%; display: block; }
 button, input, select, textarea { font: inherit; }
 
-h1,h2,h3,h4 { font-family: 'Syne', sans-serif; font-weight: 700; line-height: 1.2; }
+h1,h2,h3,h4 { font-family: 'Bebas Neue', sans-serif; font-weight: 400; line-height: 1.2; letter-spacing: 1px; }
 
 .btn {
   display: inline-flex; align-items: center; gap: 6px;
@@ -43,8 +43,8 @@ h1,h2,h3,h4 { font-family: 'Syne', sans-serif; font-weight: 700; line-height: 1.
 .btn:disabled { opacity: .5; cursor: not-allowed; }
 
 .navbar { background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
-.nav-inner { max-width: 1200px; margin: 0 auto; padding: 0 20px; display: flex; align-items: center; gap: 16px; height: 62px; }
-.nav-logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 22px; color: var(--brand); margin-right: 8px; flex-shrink: 0; }
+.nav-inner { max-width: 1200px; margin: 0 auto; padding: 0 28px; display: flex; align-items: center; gap: 16px; height: 70px; }
+.nav-logo { font-family: 'Bebas Neue', sans-serif; font-weight: 400; font-size: 32px; color: var(--brand); margin-right: 8px; flex-shrink: 0; letter-spacing: 3px; }
 .nav-search { flex: 1; display: flex; background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--radius); overflow: hidden; max-width: 500px; }
 .nav-search input { flex: 1; padding: 8px 14px; background: transparent; border: none; outline: none; }
 .nav-search button { padding: 8px 16px; background: var(--brand); color: #fff; border: none; cursor: pointer; font-weight: 600; transition: background .18s; }

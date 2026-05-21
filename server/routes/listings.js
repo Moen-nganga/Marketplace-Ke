@@ -44,7 +44,7 @@ router.get("/", optionalAuth, (req, res) => {
   let where  = ["l.status = 'active'"];
   let params = [];
 
-  if (q)           { where.push("(l.title LIKE ? OR l.description LIKE ?)"); params.push(`%${q}%`, `%${q}%`); }
+  if (q)           { where.push("(l.title LIKE ? OR l.description LIKE ? OR l.tags LIKE ?)"); params.push(`%${q}%`, `%${q}%`, `%${q}%`); }
   if (category_id) { where.push("l.category_id = ?"); params.push(category_id); }
   if (min_price)   { where.push("l.price >= ?");       params.push(min_price); }
   if (max_price)   { where.push("l.price <= ?");       params.push(max_price); }
@@ -77,7 +77,7 @@ router.get("/", optionalAuth, (req, res) => {
       LIMIT  ? OFFSET ?
     `)
     .all(...params, PAGE_SIZE, offset)
-    .map(row => ({ ...row, images: JSON.parse(row.images || "[]") }));
+    .map(row => ({ ...row, images: JSON.parse(row.images || "[]"), tags: JSON.parse(row.tags || "[]") }));
 
   res.json({ listings, total, page: parseInt(page), pages: Math.ceil(total / PAGE_SIZE) });
 });
@@ -92,7 +92,7 @@ router.get("/user/:userId", (req, res) => {
       ORDER  BY l.created_at DESC
     `)
     .all(req.params.userId)
-    .map(row => ({ ...row, images: JSON.parse(row.images || "[]") }));
+    .map(row => ({ ...row, images: JSON.parse(row.images || "[]"), tags: JSON.parse(row.tags || "[]") }));
 
   res.json(listings);
 });
@@ -114,6 +114,7 @@ router.get("/:id", optionalAuth, (req, res) => {
 
   db.prepare("UPDATE listings SET views = views + 1 WHERE id = ?").run(listing.id);
   listing.images = JSON.parse(listing.images || "[]");
+  listing.tags   = JSON.parse(listing.tags   || "[]");
   res.json(listing);
 });
 
@@ -124,13 +125,15 @@ router.post("/", requireAuth, upload.array("images", 6), (req, res) => {
     return res.status(400).json({ error: "All fields are required" });
 
   const images = (req.files || []).map(f => `/uploads/${f.filename}`);
+  const reason = req.body.reason || null;
+  const tags   = req.body.tags   || "[]";
   const result = db
     .prepare(`
-      INSERT INTO listings (user_id, category_id, title, description, price, condition, location, images)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO listings (user_id, category_id, title, description, reason, price, condition, location, images, tags)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `)
-    .run(req.user.id, category_id, title, description,
-         parseFloat(price), condition, location, JSON.stringify(images));
+    .run(req.user.id, category_id, title, description, reason,
+         parseFloat(price), condition, location, JSON.stringify(images), tags);
 
   const listing = db.prepare("SELECT * FROM listings WHERE id = ?").get(result.lastInsertRowid);
   listing.images = JSON.parse(listing.images);
@@ -188,6 +191,36 @@ router.get("/search/users", (req, res) => {
   `).all(`%${q}%`);
 
   res.json(users);
+});
+
+// ── GET /api/listings/tags/suggest?q= — autocomplete tag suggestions ─────────
+router.get("/tags/suggest", (req, res) => {
+  const { q } = req.query;
+  if (!q || q.length < 1) return res.json([]);
+
+  const rows = db.prepare(`
+    SELECT tags FROM listings
+    WHERE tags != '[]' AND status = 'active'
+  `).all();
+
+  // Flatten all tags, filter by query, deduplicate, sort by frequency
+  const freq = {};
+  rows.forEach(row => {
+    try {
+      JSON.parse(row.tags).forEach(tag => {
+        if (tag.toLowerCase().includes(q.toLowerCase())) {
+          freq[tag] = (freq[tag] || 0) + 1;
+        }
+      });
+    } catch {}
+  });
+
+  const suggestions = Object.entries(freq)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8)
+    .map(([tag]) => tag);
+
+  res.json(suggestions);
 });
 
 module.exports = router;

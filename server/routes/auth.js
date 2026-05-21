@@ -71,11 +71,46 @@ router.get("/me", require("../middleware/auth").requireAuth, (req, res) => {
 // ── GET /api/auth/user/:id — public profile info ─────────────────────────────
 router.get("/user/:id", (req, res) => {
   const user = db
-    .prepare("SELECT id, name, phone, created_at FROM users WHERE id = ?")
+    .prepare("SELECT id, name, phone, avatar, created_at FROM users WHERE id = ?")
     .get(req.params.id);
 
   if (!user) return res.status(404).json({ error: "User not found" });
   res.json(user);
+});
+
+// ── POST /api/auth/avatar — upload profile picture ───────────────────────────
+const multer = require("multer");
+const fs     = require("fs");
+const path2  = require("path");
+
+const avatarStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = path2.join(__dirname, "../../public/uploads/avatars");
+    fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path2.extname(file.originalname);
+    cb(null, `avatar-${req.user.id}-${Date.now()}${ext}`);
+  },
+});
+
+const avatarUpload = multer({
+  storage: avatarStorage,
+  limits: { fileSize: 3 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith("image/")) cb(null, true);
+    else cb(new Error("Only image files allowed"));
+  },
+});
+
+router.post("/avatar", require("../middleware/auth").requireAuth, avatarUpload.single("avatar"), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+
+  const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+  db.prepare("UPDATE users SET avatar = ? WHERE id = ?").run(avatarUrl, req.user.id);
+
+  res.json({ avatar: avatarUrl });
 });
 
 module.exports = router;

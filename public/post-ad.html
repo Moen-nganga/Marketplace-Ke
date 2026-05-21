@@ -3,14 +3,48 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Post Ad — Marketplace KE</title>
+  <title>Post Ad — SellAnythingKE</title>
   <link rel="stylesheet" href="/css/style.css" />
+  <style>
+    .tags-input-wrap {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+      border: 1.5px solid var(--border); border-radius: var(--radius);
+      padding: 8px 12px; background: var(--bg); cursor: text;
+      transition: border-color .18s; min-height: 46px;
+    }
+    .tags-input-wrap:focus-within { border-color: var(--brand); background: #fff; }
+    .tag-pill {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: #fff0e6; color: var(--brand);
+      border: 1px solid #ffd4b3; border-radius: 20px;
+      padding: 3px 10px; font-size: 13px; font-weight: 500;
+    }
+    .tag-pill button {
+      background: none; border: none; cursor: pointer;
+      color: var(--brand); font-size: 15px; line-height: 1;
+      padding: 0; display: flex; align-items: center;
+    }
+    .tag-pill button:hover { color: var(--brand-dark); }
+    #tag-text {
+      border: none; outline: none; background: transparent;
+      font-size: 14px; flex: 1; min-width: 100px;
+    }
+    .tag-suggestions {
+      display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;
+    }
+    .tag-suggestion {
+      padding: 4px 12px; border-radius: 20px; font-size: 12px;
+      background: var(--surface); border: 1px solid var(--border);
+      cursor: pointer; transition: all .18s; font-weight: 500;
+    }
+    .tag-suggestion:hover { border-color: var(--brand); color: var(--brand); background: #fff0e6; }
+  </style>
 </head>
 <body>
 
 <nav class="navbar">
   <div class="nav-inner">
-    <a href="/" class="nav-logo">Marketplace KE</a>
+    <a href="/" class="nav-logo">SellAnythingKE</a>
     <div id="nav-auth"></div>
   </div>
 </nav>
@@ -35,7 +69,7 @@
       </div>
       <div class="form-group">
         <label>Condition *</label>
-        <select id="condition">
+        <select id="condition" onchange="toggleReason()">
           <option value="">Select condition</option>
           <option value="new">New</option>
           <option value="used_like_new">Used – Like New</option>
@@ -58,7 +92,23 @@
 
     <div class="form-group">
       <label>Description *</label>
-      <textarea id="description" placeholder="Describe your item — age, features, reason for selling…"></textarea>
+      <textarea id="description" placeholder="Describe your item — specs, features, age, condition details…"></textarea>
+    </div>
+
+    <div class="form-group" id="reason-group" style="display:none">
+      <label>Reason for selling *</label>
+      <textarea id="reason" placeholder="e.g. Upgrading to a newer model, no longer needed…" style="min-height:70px"></textarea>
+      <div class="form-hint">Buyers appreciate knowing why you're selling</div>
+    </div>
+
+    <div class="form-group">
+      <label>Tags <span style="color:var(--muted);font-weight:400">(up to 5)</span></label>
+      <div class="tags-input-wrap" onclick="document.getElementById('tag-text').focus()">
+        <div id="tags-pills"></div>
+        <input id="tag-text" type="text" placeholder="Type a tag and press Enter…" maxlength="30" />
+      </div>
+      <div class="form-hint">e.g. iphone, samsung, vintage, gaming — helps buyers find your item</div>
+      <div class="tag-suggestions" id="tag-suggestions"></div>
     </div>
 
     <div class="form-group">
@@ -77,13 +127,19 @@
 <div class="toast-container" id="toast-container"></div>
 <script src="/js/api.js"></script>
 <script>
+  const tags = [];
+
   window.addEventListener("DOMContentLoaded", async () => {
     if (!isLoggedIn()) { window.location.href = "/login.html"; return; }
     updateNav();
+
+    // Load categories
     const cats = await api.getCategories();
     document.getElementById("category").innerHTML =
       `<option value="">Select category</option>` +
       cats.map(c => `<option value="${c.id}">${c.icon} ${c.name}</option>`).join("");
+
+    // Image previews
     document.getElementById("images").addEventListener("change", () => {
       const box = document.getElementById("image-previews");
       box.innerHTML = "";
@@ -98,8 +154,13 @@
         r.readAsDataURL(file);
       });
     });
+
+    // Tag input listeners
+    document.getElementById("tag-text").addEventListener("keydown", handleTagInput);
+    document.getElementById("tag-text").addEventListener("input",   fetchTagSuggestions);
   });
 
+  // ── Post ad ───────────────────────────────────────────────────────────────
   async function postAd() {
     const title       = document.getElementById("title").value.trim();
     const category_id = document.getElementById("category").value;
@@ -107,19 +168,32 @@
     const price       = document.getElementById("price").value;
     const location    = document.getElementById("location").value.trim();
     const description = document.getElementById("description").value.trim();
+    const reasonEl    = document.getElementById("reason");
+    const reason      = reasonEl ? reasonEl.value.trim() : "";
     const files       = document.getElementById("images").files;
     const btn         = document.getElementById("post-btn");
+    const isUsed      = condition && condition !== "new";
 
     document.getElementById("error-msg").style.display = "none";
+
     if (!title || !category_id || !condition || !price || !location || !description) {
       showError("Please fill in all required fields."); return;
     }
+    if (isUsed && !reason) {
+      showError("Please add a reason for selling since the item is used."); return;
+    }
 
     btn.disabled = true; btn.textContent = "Posting…";
+
     const fd = new FormData();
-    fd.append("title", title); fd.append("category_id", category_id);
-    fd.append("condition", condition); fd.append("price", price);
-    fd.append("location", location); fd.append("description", description);
+    fd.append("title",       title);
+    fd.append("category_id", category_id);
+    fd.append("condition",   condition);
+    fd.append("price",       price);
+    fd.append("location",    location);
+    fd.append("description", description);
+    if (isUsed) fd.append("reason", reason);
+    fd.append("tags", JSON.stringify(tags));
     Array.from(files).slice(0, 6).forEach(f => fd.append("images", f));
 
     try {
@@ -131,6 +205,69 @@
     }
   }
 
+  // ── Condition toggle ──────────────────────────────────────────────────────
+  function toggleReason() {
+    const condition = document.getElementById("condition").value;
+    const isUsed    = condition && condition !== "new";
+    document.getElementById("reason-group").style.display = isUsed ? "" : "none";
+    if (!isUsed) document.getElementById("reason").value = "";
+  }
+
+  // ── Tag input ─────────────────────────────────────────────────────────────
+  function handleTagInput(e) {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      addTag(e.target.value.trim());
+    } else if (e.key === "Backspace" && e.target.value === "" && tags.length) {
+      removeTag(tags.length - 1);
+    }
+  }
+
+  function addTag(val) {
+    val = val.replace(/,/g, "").trim().toLowerCase();
+    if (!val)               return;
+    if (tags.length >= 5)   { toast("Maximum 5 tags allowed", "error"); return; }
+    if (tags.includes(val)) { toast("Tag already added", "error"); return; }
+    tags.push(val);
+    renderTagPills();
+    document.getElementById("tag-text").value = "";
+    document.getElementById("tag-suggestions").innerHTML = "";
+  }
+
+  function removeTag(index) {
+    tags.splice(index, 1);
+    renderTagPills();
+  }
+
+  function renderTagPills() {
+    const input   = document.getElementById("tag-text");
+    const pillsEl = document.getElementById("tags-pills");
+    pillsEl.innerHTML = tags.map((t, i) => `
+      <span class="tag-pill">
+        #${t}
+        <button type="button" onclick="removeTag(${i})">×</button>
+      </span>`).join("");
+    input.placeholder = tags.length >= 5 ? "Max 5 tags reached" : "Type a tag and press Enter…";
+    input.disabled    = tags.length >= 5;
+  }
+
+  let suggestTimer = null;
+  async function fetchTagSuggestions() {
+    const val = document.getElementById("tag-text").value.trim();
+    clearTimeout(suggestTimer);
+    if (!val) { document.getElementById("tag-suggestions").innerHTML = ""; return; }
+    suggestTimer = setTimeout(async () => {
+      try {
+        const suggestions = await api.suggestTags(val);
+        const filtered    = suggestions.filter(s => !tags.includes(s));
+        document.getElementById("tag-suggestions").innerHTML = filtered.length
+          ? filtered.map(s => `<span class="tag-suggestion" onclick="addTag('${s}')">#${s}</span>`).join("")
+          : "";
+      } catch {}
+    }, 300);
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
   function showError(msg) {
     const el = document.getElementById("error-msg");
     el.textContent = msg; el.style.display = "block";
