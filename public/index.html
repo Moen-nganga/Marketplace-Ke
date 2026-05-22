@@ -132,19 +132,51 @@
     try {
       const cats = await api.getCategories();
       bar.innerHTML =
-        `<div class="cat-chip active" onclick="filterCategory(null, this)">
+        `<div class="cat-chip active" onclick="filterCategory(null, null, this)">
            <span class="icon">🏠</span><span class="label">All</span>
          </div>` +
         cats.map(c => `
-          <div class="cat-chip" onclick="filterCategory(${c.id}, this)">
+          <div class="cat-chip" onclick="filterCategory(${c.id}, ${JSON.stringify(c.children)}, this)">
             <span class="icon">${c.icon}</span>
             <span class="label">${c.name}</span>
           </div>`).join("");
     } catch { bar.innerHTML = ""; }
   }
 
-  function filterCategory(id, el) {
+  function filterCategory(id, children, el) {
     document.querySelectorAll(".cat-chip").forEach(c => c.classList.remove("active"));
+    el.classList.add("active");
+    activeCategoryId = id;
+    currentPage = 1;
+    loadListings();
+    renderSubcategories(children);
+  }
+
+  function renderSubcategories(children) {
+    // Remove existing subcategory bar if any
+    const existing = document.getElementById("subcategories-bar");
+    if (existing) existing.remove();
+
+    if (!children || !children.length) return;
+
+    const bar = document.getElementById("categories-bar");
+    const sub  = document.createElement("div");
+    sub.id        = "subcategories-bar";
+    sub.className = "categories-bar";
+    sub.style.cssText = "padding-top:0;border-top:1px solid var(--border);margin-top:-8px";
+
+    sub.innerHTML = children.map(c => `
+      <div class="cat-chip" style="min-width:unset;padding:7px 14px"
+           onclick="selectSubcategory(${c.id}, this)">
+        <span class="icon" style="font-size:16px">${c.icon}</span>
+        <span class="label">${c.name}</span>
+      </div>`).join("");
+
+    bar.insertAdjacentElement("afterend", sub);
+  }
+
+  function selectSubcategory(id, el) {
+    document.querySelectorAll("#subcategories-bar .cat-chip").forEach(c => c.classList.remove("active"));
     el.classList.add("active");
     activeCategoryId = id;
     currentPage = 1;
