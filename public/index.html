@@ -3,30 +3,83 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MSellAnythingKE  — Buy & Sell in Kenya</title>
+  <title>SellAnythingKE — Buy & Sell in Kenya</title>
   <link rel="stylesheet" href="/css/style.css" />
   <style>
-    .search-suggestions {
-      position: absolute; top: 100%; left: 0; right: 0;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 0 0 var(--radius) var(--radius);
-      box-shadow: var(--shadow-lg); z-index: 200;
-      overflow: hidden;
+    .cat-chip-wrap {
+      position: relative;
+      display: inline-block;
+      z-index: 400;
     }
-    .suggestion-item {
-      padding: 10px 16px; cursor: pointer; font-size: 14px;
-      display: flex; align-items: center; gap: 8px;
-      transition: background .15s;
+    .categories-wrap {
+      position: relative;
+      z-index: 400;
     }
-    .suggestion-item:hover { background: #fff0e6; color: var(--brand); }
-    .nav-search { position: relative; }
+    .subcategory-dropdown {
+      display: none;
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-lg);
+      z-index: 300;
+      padding: 10px 12px;
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 8px;
+      min-width: 320px;
+      max-width: 500px;
+    }
+    .cat-chip-wrap:hover .subcategory-dropdown {
+      display: flex;
+    }
+    .subcategory-dropdown a {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: var(--bg);
+      white-space: nowrap;
+      transition: all .15s;
+      text-decoration: none;
+    }
+    .subcategory-dropdown a:hover {
+      background: #fff0e6;
+      color: var(--brand);
+      border-color: var(--brand);
+    }
+    .subcategory-dropdown::before {
+      content: '';
+      position: absolute;
+      top: -7px;
+      left: 24px;
+      border: 7px solid transparent;
+      border-bottom-color: var(--border);
+      border-top: none;
+    }
+    .subcategory-dropdown::after {
+      content: '';
+      position: absolute;
+      top: -6px;
+      left: 25px;
+      border: 6px solid transparent;
+      border-bottom-color: var(--surface);
+      border-top: none;
+    }
   </style>
 </head>
 <body>
 
 <nav class="navbar">
   <div class="nav-inner">
-    <a href="/" class="nav-logo">SellAnythingKE </a>
+    <a href="/" class="nav-logo">SellAnythingKE</a>
     <div id="nav-auth"></div>
   </div>
 </nav>
@@ -41,13 +94,22 @@
 </div>
 
 <main class="container page-body">
-  <div id="categories-bar" class="categories-bar"></div>
 
+  <!-- Categories -->
+  <div class="categories-wrap">
+    <div id="categories-bar" class="categories-bar"></div>
+  </div>
+
+  <!-- Space for subcategory dropdowns -->
+  <div style="height: 80px;"></div>
+
+  <!-- Section header -->
   <div class="section-header">
     <h2 id="section-title">Latest Listings</h2>
     <span id="result-count" style="color:var(--muted);font-size:13px;"></span>
   </div>
 
+  <!-- Filters -->
   <div class="filters-bar">
     <select id="filter-sort" onchange="applyFilters()">
       <option value="newest">Newest first</option>
@@ -75,8 +137,10 @@
     <div id="people-grid" style="display:flex;flex-wrap:wrap;gap:12px"></div>
   </div>
 
+  <!-- Listings -->
   <div id="listings-grid" class="listings-grid"></div>
   <div id="pagination" style="display:flex;gap:10px;justify-content:center;margin-top:32px;"></div>
+
 </main>
 
 <div class="toast-container" id="toast-container"></div>
@@ -86,103 +150,80 @@
   let currentPage      = 1;
   let activeCategoryId = null;
   let currentSearch    = "";
+  let allCategories    = [];
 
   window.addEventListener("DOMContentLoaded", async () => {
     updateNav();
     await loadCategories();
+
+    // Check if a category was requested via URL e.g. /?cat=Phones
+    const urlParams = new URLSearchParams(location.search);
+    const catName   = urlParams.get("cat");
+    if (catName) {
+      // Find the matching category and activate it
+      const match = allCategories.find(c => c.name.toLowerCase() === catName.toLowerCase());
+      if (match) {
+        activeCategoryId = match.id;
+        const titleEl = document.getElementById("section-title");
+        if (titleEl) titleEl.textContent = match.name;
+        // Highlight the correct chip
+        document.querySelectorAll(".cat-chip").forEach(chip => {
+          chip.classList.remove("active");
+          if (chip.textContent.trim().includes(match.name)) chip.classList.add("active");
+        });
+      }
+    }
+
     await loadListings();
   });
 
-  let navSuggestTimer = null;
-  async function fetchNavSuggestions() {
-    const val = document.getElementById("nav-q").value.trim();
-    clearTimeout(navSuggestTimer);
-    const box = document.getElementById("nav-suggestions");
-    if (!val) { box.style.display = "none"; return; }
-
-    navSuggestTimer = setTimeout(async () => {
-      try {
-        const tags = await api.suggestTags(val);
-        if (!tags.length) { box.style.display = "none"; return; }
-        box.innerHTML = tags.map(t => `
-          <div class="suggestion-item" onmousedown="selectSuggestion('${t}')">
-            🏷️ <span>#${t}</span>
-          </div>`).join("");
-        box.style.display = "";
-      } catch { box.style.display = "none"; }
-    }, 250);
-  }
-
-  function selectSuggestion(tag) {
-    document.getElementById("nav-q").value = tag;
-    hideSuggestions();
-    currentSearch = tag;
-    document.getElementById("section-title").textContent = `Results for "${tag}"`;
-    currentPage = 1;
-    loadListings();
-    loadPeople(tag);
-  }
-
-  function hideSuggestions() {
-    document.getElementById("nav-suggestions").style.display = "none";
-  }
-
+  // ── Categories ────────────────────────────────────────────────────────────
   async function loadCategories() {
     const bar = document.getElementById("categories-bar");
     try {
       const cats = await api.getCategories();
+      allCategories = cats;
+
       bar.innerHTML =
         `<div class="cat-chip active" onclick="filterCategory(null, null, this)">
            <span class="icon">🏠</span><span class="label">All</span>
          </div>` +
-        cats.map(c => `
-          <div class="cat-chip" onclick="filterCategory(${c.id}, ${JSON.stringify(c.children)}, this)">
-            <span class="icon">${c.icon}</span>
-            <span class="label">${c.name}</span>
+        cats.map((c, i) => `
+          <div class="cat-chip-wrap">
+            <div class="cat-chip" onclick="filterCategory(${c.id}, ${i}, this)">
+              <span class="icon">${c.icon}</span>
+              <span class="label">${c.name}</span>
+            </div>
+            ${c.children && c.children.length ? `
+            <div class="subcategory-dropdown">
+              ${c.children.map(child => `
+                <a href="javascript:void(0)" onclick="selectSubcategory(${child.id}, '${child.name}')">
+                  <span>${child.icon}</span>${child.name}
+                </a>`).join("")}
+            </div>` : ""}
           </div>`).join("");
     } catch { bar.innerHTML = ""; }
   }
 
-  function filterCategory(id, children, el) {
+  function filterCategory(id, catIndex, el) {
     document.querySelectorAll(".cat-chip").forEach(c => c.classList.remove("active"));
     el.classList.add("active");
     activeCategoryId = id;
     currentPage = 1;
+    document.getElementById("section-title").textContent =
+      id === null ? "Latest Listings" : allCategories[catIndex]?.name || "Listings";
     loadListings();
-    renderSubcategories(children);
   }
 
-  function renderSubcategories(children) {
-    // Remove existing subcategory bar if any
-    const existing = document.getElementById("subcategories-bar");
-    if (existing) existing.remove();
-
-    if (!children || !children.length) return;
-
-    const bar = document.getElementById("categories-bar");
-    const sub  = document.createElement("div");
-    sub.id        = "subcategories-bar";
-    sub.className = "categories-bar";
-    sub.style.cssText = "padding-top:0;border-top:1px solid var(--border);margin-top:-8px";
-
-    sub.innerHTML = children.map(c => `
-      <div class="cat-chip" style="min-width:unset;padding:7px 14px"
-           onclick="selectSubcategory(${c.id}, this)">
-        <span class="icon" style="font-size:16px">${c.icon}</span>
-        <span class="label">${c.name}</span>
-      </div>`).join("");
-
-    bar.insertAdjacentElement("afterend", sub);
-  }
-
-  function selectSubcategory(id, el) {
-    document.querySelectorAll("#subcategories-bar .cat-chip").forEach(c => c.classList.remove("active"));
-    el.classList.add("active");
+  function selectSubcategory(id, name) {
+    document.querySelectorAll(".cat-chip").forEach(c => c.classList.remove("active"));
     activeCategoryId = id;
     currentPage = 1;
+    document.getElementById("section-title").textContent = name;
     loadListings();
   }
 
+  // ── Listings ──────────────────────────────────────────────────────────────
   async function loadListings() {
     const grid = document.getElementById("listings-grid");
     grid.innerHTML = skeletonCards(8);
@@ -225,10 +266,10 @@
   }
 
   function listingCard(l) {
-    const img = l.images?.length
+    const img   = l.images?.length
       ? `<img src="${l.images[0]}" alt="${l.title}" loading="lazy" />`
       : `<span>${l.category_icon || "📦"}</span>`;
-    const badge  = l.condition === "new" ? "badge-new" : "badge-used";
+    const badge = l.condition === "new" ? "badge-new" : "badge-used";
     return `
       <div class="listing-card" onclick="window.location='/listing.html?id=${l.id}'">
         <div class="card-img">${img}</div>
@@ -246,6 +287,7 @@
       </div>`;
   }
 
+  // ── Pagination ────────────────────────────────────────────────────────────
   function renderPagination(pages) {
     const el = document.getElementById("pagination");
     if (pages <= 1) { el.innerHTML = ""; return; }
@@ -261,33 +303,31 @@
   function goPage(p) { currentPage = p; loadListings(); window.scrollTo(0,0); }
   function applyFilters() { currentPage = 1; loadListings(); }
 
-  function navSearch(e) {
+  // ── Search ────────────────────────────────────────────────────────────────
+  function heroSearch(e) {
     e.preventDefault();
-    currentSearch = document.getElementById("nav-q").value.trim();
-    document.getElementById("section-title").textContent =
-      currentSearch ? `Results for "${currentSearch}"` : "Latest Listings";
+    const q = document.getElementById("hero-q").value.trim();
+    if (!q) return;
+    currentSearch = q;
+    const titleEl = document.getElementById("section-title");
+    if (titleEl) titleEl.textContent = `Results for "${q}"`;
     currentPage = 1;
     loadListings();
-    if (currentSearch) loadPeople(currentSearch);
-    else hidePeople();
+    loadPeople(q);
+    document.querySelector(".container.page-body").scrollIntoView({ behavior: "smooth" });
   }
 
+  // ── People ────────────────────────────────────────────────────────────────
   async function loadPeople(q) {
-    const section  = document.getElementById("people-section");
-    const grid     = document.getElementById("people-grid");
+    const section = document.getElementById("people-section");
+    const grid    = document.getElementById("people-grid");
     section.style.display = "";
     grid.innerHTML = `<div style="color:var(--muted);font-size:13px">Searching people…</div>`;
-
     try {
       const users = await api.searchUsers(q);
-      if (!users.length) {
-        section.style.display = "none";
-        return;
-      }
+      if (!users.length) { section.style.display = "none"; return; }
       grid.innerHTML = users.map(userCard).join("");
-    } catch {
-      section.style.display = "none";
-    }
+    } catch { section.style.display = "none"; }
   }
 
   function hidePeople() {
@@ -302,7 +342,6 @@
       ? `<span style="color:#f59e0b;letter-spacing:1px;font-size:13px">${stars}</span>
          <span style="font-size:12px;color:var(--muted)">${u.avg_rating} (${u.rating_count})</span>`
       : `<span style="font-size:12px;color:var(--muted)">No ratings yet</span>`;
-
     return `
       <div onclick="window.location='/profile.html?id=${u.id}'"
            style="background:var(--surface);border:1px solid var(--border);
@@ -313,7 +352,7 @@
            onmouseout="this.style.borderColor='var(--border)'">
         <div style="width:46px;height:46px;border-radius:50%;background:var(--brand);
                     color:#fff;display:flex;align-items:center;justify-content:center;
-                    font-family:'Syne',sans-serif;font-weight:800;font-size:20px;flex-shrink:0">
+                    font-weight:800;font-size:20px;flex-shrink:0">
           ${u.name[0].toUpperCase()}
         </div>
         <div>
@@ -326,6 +365,7 @@
       </div>`;
   }
 
+  // ── Skeletons ─────────────────────────────────────────────────────────────
   function skeletonCards(n) {
     return Array.from({length: n}, () => `
       <div class="listing-card">
@@ -337,21 +377,64 @@
         </div>
       </div>`).join("");
   }
-
-  function heroSearch(e) {
-    e.preventDefault();
-    const q = document.getElementById("hero-q").value.trim();
-    if (!q) return;
-    document.getElementById("nav-q").value = q;
-    currentSearch = q;
-    document.getElementById("section-title").textContent = `Results for "${q}"`;
-    currentPage = 1;
-    loadListings();
-    loadPeople(q);
-    // Scroll down to results
-    document.querySelector(".container.page-body").scrollIntoView({ behavior: "smooth" });
-  }
-  
 </script>
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-grid">
+
+      <!-- Brand -->
+      <div class="footer-brand">
+        <div class="logo">SellAnythingKE</div>
+        <p>Kenya's free online marketplace. Buy and sell anything — electronics, vehicles, fashion, and more.</p>
+      </div>
+
+      <!-- Quick links -->
+      <div class="footer-col">
+        <h4>Quick Links</h4>
+        <a href="/">Home</a>
+        <a href="/post-ad.html">Post an Ad</a>
+        <a href="/login.html">Login</a>
+        <a href="/register.html">Register</a>
+      </div>
+
+      <!-- Categories -->
+      <div class="footer-col">
+        <h4>Categories</h4>
+        <a href="/?cat=Phones">Phones</a>
+        <a href="/?cat=Electronics">Electronics</a>
+        <a href="/?cat=Vehicles">Vehicles</a>
+        <a href="/?cat=Fashion">Fashion</a>
+        <a href="/?cat=Home%20%26%20Garden">Home & Garden</a>
+        <a href="/?cat=Sports%20%26%20Leisure">Sports & Leisure</a>
+        <a href="/?cat=Jobs">Jobs</a>
+        <a href="/?cat=Kids%20%26%20Baby">Kids & Baby</a>
+        <a href="/?cat=Animals%20%26%20Pets">Animals & Pets</a>
+        <a href="/?cat=Services">Services</a>
+      </div>
+
+      <!-- Help -->
+      <div class="footer-col">
+        <h4>Help</h4>
+        <a href="/safety-tips.html">Safety Tips</a>
+        <a href="/how-it-works.html">How it Works</a>
+        <a href="#">Contact Us</a>
+        <a href="/privacy-policy.html">Privacy Policy</a>
+        <a href="/terms.html">Terms of Use</a>
+      </div>
+
+    </div>
+
+    <!-- Bottom bar -->
+    <div class="footer-bottom">
+      <p>© 2026 SellAnythingKE. All rights reserved.</p>
+      <div class="footer-socials">
+        <a href="#" title="Facebook">f</a>
+        <a href="#" title="Twitter">𝕏</a>
+        <a href="#" title="Instagram">📷</a>
+        <a href="#" title="WhatsApp">💬</a>
+      </div>
+    </div>
+  </div>
+</footer>
 </body>
 </html>

@@ -63,10 +63,11 @@
       : `<div class="gallery-main">${l.category_icon || "📦"}</div>`;
 
     const ownerActions = isOwner ? `
-      <div style="display:flex;gap:10px;margin-top:8px">
+      <div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap">
         ${l.status === "active"
           ? `<button class="btn btn-ghost" onclick="markSold()">Mark as Sold</button>`
           : `<span class="badge badge-sold" style="padding:8px 16px">Sold</span>`}
+        <a href="/edit-listing.html?id=${l.id}" class="btn btn-ghost">✏️ Edit</a>
         <button class="btn btn-ghost" style="color:#dc2626;border-color:#dc2626" onclick="deleteListing()">Delete</button>
       </div>` : "";
 
@@ -171,5 +172,63 @@
     } catch (e) { toast(e.message, "error"); }
   }
 </script>
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-grid">
+
+      <!-- Brand -->
+      <div class="footer-brand">
+        <div class="logo">SellAnythingKE</div>
+        <p>Kenya's free online marketplace. Buy and sell anything — electronics, vehicles, fashion, and more.</p>
+      </div>
+
+      <!-- Quick links -->
+      <div class="footer-col">
+        <h4>Quick Links</h4>
+        <a href="/">Home</a>
+        <a href="/post-ad.html">Post an Ad</a>
+        <a href="/login.html">Login</a>
+        <a href="/register.html">Register</a>
+      </div>
+
+      <!-- Categories -->
+      <div class="footer-col">
+        <h4>Categories</h4>
+        <a href="/?cat=Phones">Phones</a>
+        <a href="/?cat=Electronics">Electronics</a>
+        <a href="/?cat=Vehicles">Vehicles</a>
+        <a href="/?cat=Fashion">Fashion</a>
+        <a href="/?cat=Home%20%26%20Garden">Home & Garden</a>
+        <a href="/?cat=Sports%20%26%20Leisure">Sports & Leisure</a>
+        <a href="/?cat=Jobs">Jobs</a>
+        <a href="/?cat=Kids%20%26%20Baby">Kids & Baby</a>
+        <a href="/?cat=Animals%20%26%20Pets">Animals & Pets</a>
+        <a href="/?cat=Services">Services</a>
+      </div>
+
+      <!-- Help -->
+      <div class="footer-col">
+        <h4>Help</h4>
+        <a href="/safety-tips.html">Safety Tips</a>
+        <a href="/how-it-works.html">How it Works</a>
+        <a href="#">Contact Us</a>
+        <a href="/privacy-policy.html">Privacy Policy</a>
+        <a href="/terms.html">Terms of Use</a>
+      </div>
+
+    </div>
+
+    <!-- Bottom bar -->
+    <div class="footer-bottom">
+      <p>© 2026 SellAnythingKE. All rights reserved.</p>
+      <div class="footer-socials">
+        <a href="#" title="Facebook">f</a>
+        <a href="#" title="Twitter">𝕏</a>
+        <a href="#" title="Instagram">📷</a>
+        <a href="#" title="WhatsApp">💬</a>
+      </div>
+    </div>
+  </div>
+</footer>
 </body>
 </html>

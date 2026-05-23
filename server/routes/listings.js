@@ -146,6 +146,7 @@ router.patch("/:id", requireAuth, (req, res) => {
   if (listing.user_id !== req.user.id) return res.status(403).json({ error: "Forbidden" });
 
   const { title, description, price, condition, location, status } = req.body;
+  const { tags, images, reason } = req.body;
   db.prepare(`
     UPDATE listings
     SET title       = COALESCE(?, title),
@@ -153,9 +154,19 @@ router.patch("/:id", requireAuth, (req, res) => {
         price       = COALESCE(?, price),
         condition   = COALESCE(?, condition),
         location    = COALESCE(?, location),
-        status      = COALESCE(?, status)
+        status      = COALESCE(?, status),
+        reason      = COALESCE(?, reason),
+        tags        = COALESCE(?, tags),
+        images      = COALESCE(?, images),
+        category_id = COALESCE(?, category_id)
     WHERE id = ?
-  `).run(title, description, price ? parseFloat(price) : null, condition, location, status, listing.id);
+  `).run(
+    title, description, price ? parseFloat(price) : null,
+    condition, location, status, reason || null,
+    tags || null, images || null,
+    req.body.category_id || null,
+    listing.id
+  );
 
   const updated = db.prepare("SELECT * FROM listings WHERE id = ?").get(listing.id);
   updated.images = JSON.parse(updated.images);

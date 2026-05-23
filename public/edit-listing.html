@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Post Ad — SellAnythingKE</title>
+  <title>Edit Listing — SellAnythingKE</title>
   <link rel="stylesheet" href="/css/style.css" />
   <style>
     .tags-input-wrap {
@@ -24,7 +24,6 @@
       color: var(--brand); font-size: 15px; line-height: 1;
       padding: 0; display: flex; align-items: center;
     }
-    .tag-pill button:hover { color: var(--brand-dark); }
     #tag-text {
       border: none; outline: none; background: transparent;
       font-size: 14px; flex: 1; min-width: 100px;
@@ -38,17 +37,21 @@
       cursor: pointer; transition: all .18s; font-weight: 500;
     }
     .tag-suggestion:hover { border-color: var(--brand); color: var(--brand); background: #fff0e6; }
-    .preview-thumb { position: relative; }
-    .preview-remove {
+    .existing-images { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+    .existing-thumb {
+      width: 90px; height: 90px; border-radius: 8px; overflow: hidden;
+      border: 2px solid var(--border); position: relative;
+    }
+    .existing-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .existing-thumb .remove-img {
       position: absolute; top: 4px; left: 4px;
       width: 20px; height: 20px; border-radius: 50%;
       background: rgba(0,0,0,.7); color: #fff;
       border: none; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      font-size: 13px; line-height: 1; font-weight: 700;
-      transition: background .15s;
+      font-size: 13px; font-weight: 700; transition: background .15s;
     }
-    .preview-remove:hover { background: #dc2626; }
+    .existing-thumb .remove-img:hover { background: #dc2626; }
   </style>
 </head>
 <body>
@@ -61,16 +64,18 @@
 </nav>
 
 <div class="container page-body" style="max-width:700px">
-  <h1 style="margin-bottom:6px">Post Your Ad</h1>
-  <p style="color:var(--muted);margin-bottom:24px">Fill in the details below to list your item for free.</p>
+  <a href="javascript:history.back()" style="color:var(--brand);font-size:14px;display:inline-flex;align-items:center;gap:4px;margin-bottom:20px">
+    ← Back to listing
+  </a>
+  <h1 style="margin-bottom:6px">Edit Listing</h1>
+  <p style="color:var(--muted);margin-bottom:24px">Update your listing details below.</p>
 
   <div class="form-card">
     <div id="error-msg" style="display:none;color:#dc2626;background:#fee2e2;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:14px;"></div>
 
     <div class="form-group">
       <label>Title *</label>
-      <input id="title" type="text" placeholder="e.g. iPhone 13 Pro Max 256GB" maxlength="120" />
-      <div class="form-hint">Be specific — include brand, model, size</div>
+      <input id="title" type="text" maxlength="120" />
     </div>
 
     <div class="form-row">
@@ -93,22 +98,22 @@
     <div class="form-row">
       <div class="form-group">
         <label>Price (KSh) *</label>
-        <input id="price" type="number" placeholder="e.g. 15000" min="0" />
+        <input id="price" type="number" min="0" />
       </div>
       <div class="form-group">
         <label>Location *</label>
-        <input id="location" type="text" placeholder="e.g. Nairobi, Westlands" />
+        <input id="location" type="text" />
       </div>
     </div>
 
     <div class="form-group">
       <label>Description *</label>
-      <textarea id="description" placeholder="Describe your item — specs, features, age, condition details…"></textarea>
+      <textarea id="description" style="min-height:110px"></textarea>
     </div>
 
     <div class="form-group" id="reason-group" style="display:none">
       <label>Reason for selling *</label>
-      <textarea id="reason" placeholder="e.g. Upgrading to a newer model, no longer needed…" style="min-height:70px"></textarea>
+      <textarea id="reason" style="min-height:70px"></textarea>
       <div class="form-hint">Buyers appreciate knowing why you're selling</div>
     </div>
 
@@ -118,19 +123,22 @@
         <div id="tags-pills"></div>
         <input id="tag-text" type="text" placeholder="Type a tag and press Enter…" maxlength="30" />
       </div>
-      <div class="form-hint">e.g. iphone, samsung, vintage, gaming — helps buyers find your item</div>
       <div class="tag-suggestions" id="tag-suggestions"></div>
     </div>
 
     <div class="form-group">
-      <label>Photos <span style="color:var(--muted);font-weight:400">(up to 6)</span></label>
-      <input id="images" type="file" accept="image/*" multiple style="padding:8px 0;border:none;background:none" />
-      <div class="form-hint">JPG, PNG, WEBP — max 5 MB each</div>
-      <div class="image-previews" id="image-previews"></div>
+      <label>Current Photos</label>
+      <div class="existing-images" id="existing-images"></div>
+      <div class="form-hint" style="margin-top:8px">Click × to remove a photo</div>
     </div>
 
-    <button class="btn btn-primary btn-full" id="post-btn" onclick="postAd()" style="margin-top:8px;padding:14px">
-      Post Ad for Free
+    <div class="form-group">
+      <label>Add More Photos <span style="color:var(--muted);font-weight:400">(up to 6 total)</span></label>
+      <input id="new-images" type="file" accept="image/*" multiple style="padding:8px 0;border:none;background:none" />
+    </div>
+
+    <button class="btn btn-primary btn-full" id="save-btn" onclick="saveChanges()" style="margin-top:8px;padding:14px">
+      Save Changes
     </button>
   </div>
 </div>
@@ -138,89 +146,93 @@
 <div class="toast-container" id="toast-container"></div>
 <script src="/js/api.js"></script>
 <script>
-  const tags = [];
+  const listingId  = parseInt(new URLSearchParams(location.search).get("id"));
+  const me         = getUser();
+  const tags       = [];
+  let   keepImages = []; // existing image URLs to keep
 
   window.addEventListener("DOMContentLoaded", async () => {
-    if (!isLoggedIn()) { window.location.href = "/login.html"; return; }
+    if (!me) { window.location.href = "/login.html"; return; }
     updateNav();
+    await loadCategories();
+    await loadListing();
 
-    // Load categories with subcategories
-    const cats = await api.getCategories();
-    let catOptions = `<option value="">Select category</option>`;
-    cats.forEach(parent => {
-      if (parent.children && parent.children.length) {
-        // Parent as group header, children as options
-        catOptions += `<optgroup label="${parent.icon} ${parent.name}">`;
-        parent.children.forEach(child => {
-          catOptions += `<option value="${child.id}">${child.icon} ${child.name}</option>`;
-        });
-        catOptions += `</optgroup>`;
-      } else {
-        catOptions += `<option value="${parent.id}">${parent.icon} ${parent.name}</option>`;
-      }
-    });
-    document.getElementById("category").innerHTML = catOptions;
-
-    // Image previews
-    document.getElementById("images").addEventListener("change", (e) => {
-      const incoming = Array.from(e.target.files);
-      incoming.forEach(f => {
-        if (selectedFiles.length < 6) selectedFiles.push(f);
-      });
-      // Reset input so same file can be re-added after removal
-      e.target.value = "";
-      renderPreviews();
-    });
-
-    // Tag input listeners
     document.getElementById("tag-text").addEventListener("keydown", handleTagInput);
     document.getElementById("tag-text").addEventListener("input",   fetchTagSuggestions);
   });
 
-  let selectedFiles = [];
-
-  function renderPreviews() {
-    const box = document.getElementById("image-previews");
-    box.innerHTML = "";
-
-    selectedFiles.forEach((file, index) => {
-      const r = new FileReader();
-      r.onload = e => {
-        const d = document.createElement("div");
-        d.className = "preview-thumb";
-        d.innerHTML = `
-          <img src="${e.target.result}" />
-          <button type="button" class="preview-remove" onclick="removeImage(${index})">×</button>`;
-        box.appendChild(d);
-      };
-      r.readAsDataURL(file);
+  // ── Load categories ───────────────────────────────────────────────────────
+  async function loadCategories() {
+    const cats = await api.getCategories();
+    let html = `<option value="">Select category</option>`;
+    cats.forEach(parent => {
+      if (parent.children && parent.children.length) {
+        html += `<optgroup label="${parent.icon} ${parent.name}">`;
+        parent.children.forEach(child => {
+          html += `<option value="${child.id}">${child.icon} ${child.name}</option>`;
+        });
+        html += `</optgroup>`;
+      } else {
+        html += `<option value="${parent.id}">${parent.icon} ${parent.name}</option>`;
+      }
     });
+    document.getElementById("category").innerHTML = html;
   }
 
-    const box = document.getElementById("image-previews");
-    box.innerHTML = "";
+  // ── Load existing listing data ────────────────────────────────────────────
+  async function loadListing() {
+    try {
+      const l = await api.getListing(listingId);
 
-    selectedFiles.forEach((file, index) => {
-      const r = new FileReader();
-      r.onload = e => {
-        const d = document.createElement("div");
-        d.className = "preview-thumb";
-        d.innerHTML = `
-          <img src="${e.target.result}" />
-          <button type="button" class="preview-remove" onclick="removeImage(${index})">×</button>`;
-        box.appendChild(d);
-      };
-      r.readAsDataURL(file);
-    });
-  
+      // Make sure only the owner can edit
+      if (l.user_id !== me.id) {
+        window.location.href = `/listing.html?id=${listingId}`;
+        return;
+      }
 
-  function removeImage(index) {
-    selectedFiles.splice(index, 1);
-    renderPreviews();
+      // Populate fields
+      document.getElementById("title").value       = l.title;
+      document.getElementById("price").value       = l.price;
+      document.getElementById("location").value    = l.location;
+      document.getElementById("description").value = l.description;
+      document.getElementById("condition").value   = l.condition;
+      document.getElementById("category").value    = l.category_id;
+      if (l.reason) document.getElementById("reason").value = l.reason;
+      toggleReason();
+
+      // Load existing tags
+      (l.tags || []).forEach(t => { tags.push(t); });
+      renderTagPills();
+
+      // Load existing images
+      keepImages = [...(l.images || [])];
+      renderExistingImages();
+    } catch (e) {
+      showError(e.message);
+    }
   }
 
-  // ── Post ad ───────────────────────────────────────────────────────────────
-  async function postAd() {
+  // ── Existing images ───────────────────────────────────────────────────────
+  function renderExistingImages() {
+    const box = document.getElementById("existing-images");
+    if (!keepImages.length) {
+      box.innerHTML = `<p style="font-size:13px;color:var(--muted)">No photos</p>`;
+      return;
+    }
+    box.innerHTML = keepImages.map((src, i) => `
+      <div class="existing-thumb">
+        <img src="${src}" alt="Photo ${i+1}" />
+        <button type="button" class="remove-img" onclick="removeExistingImage(${i})">×</button>
+      </div>`).join("");
+  }
+
+  function removeExistingImage(index) {
+    keepImages.splice(index, 1);
+    renderExistingImages();
+  }
+
+  // ── Save changes ──────────────────────────────────────────────────────────
+  async function saveChanges() {
     const title       = document.getElementById("title").value.trim();
     const category_id = document.getElementById("category").value;
     const condition   = document.getElementById("condition").value;
@@ -229,9 +241,9 @@
     const description = document.getElementById("description").value.trim();
     const reasonEl    = document.getElementById("reason");
     const reason      = reasonEl ? reasonEl.value.trim() : "";
-    const files = selectedFiles;
-    const btn         = document.getElementById("post-btn");
     const isUsed      = condition && condition !== "new";
+    const newFiles    = document.getElementById("new-images").files;
+    const btn         = document.getElementById("save-btn");
 
     document.getElementById("error-msg").style.display = "none";
 
@@ -242,37 +254,51 @@
       showError("Please add a reason for selling since the item is used."); return;
     }
 
-    btn.disabled = true; btn.textContent = "Posting…";
-
-    const fd = new FormData();
-    fd.append("title",       title);
-    fd.append("category_id", category_id);
-    fd.append("condition",   condition);
-    fd.append("price",       price);
-    fd.append("location",    location);
-    fd.append("description", description);
-    if (isUsed) fd.append("reason", reason);
-    fd.append("tags", JSON.stringify(tags));
-    selectedFiles.slice(0, 6).forEach(f => fd.append("images", f));
+    btn.disabled = true; btn.textContent = "Saving…";
 
     try {
-      const listing = await api.createListing(fd);
-      window.location.href = `/listing.html?id=${listing.id}`;
+      // First update the text fields
+      await api.updateListing(listingId, {
+        title, category_id, condition,
+        price:       parseFloat(price),
+        location,    description,
+        reason:      isUsed ? reason : null,
+        tags:        JSON.stringify(tags),
+        images:      JSON.stringify(keepImages),
+      });
+
+      // If there are new images, upload them via a separate call
+      if (newFiles.length) {
+        const fd = new FormData();
+        fd.append("title",       title);
+        fd.append("category_id", category_id);
+        fd.append("condition",   condition);
+        fd.append("price",       price);
+        fd.append("location",    location);
+        fd.append("description", description);
+        if (isUsed) fd.append("reason", reason);
+        fd.append("tags",   JSON.stringify(tags));
+        fd.append("keepImages", JSON.stringify(keepImages));
+        Array.from(newFiles).slice(0, 6 - keepImages.length).forEach(f => fd.append("images", f));
+        await apiFetch(`/listings/${listingId}/images`, { method: "POST", body: fd });
+      }
+
+      toast("Listing updated!", "success");
+      setTimeout(() => window.location.href = `/listing.html?id=${listingId}`, 1000);
     } catch (e) {
       showError(e.message);
-      btn.disabled = false; btn.textContent = "Post Ad for Free";
+      btn.disabled = false; btn.textContent = "Save Changes";
     }
   }
 
-  // ── Condition toggle ──────────────────────────────────────────────────────
+  // ── Toggle reason ─────────────────────────────────────────────────────────
   function toggleReason() {
     const condition = document.getElementById("condition").value;
     const isUsed    = condition && condition !== "new";
     document.getElementById("reason-group").style.display = isUsed ? "" : "none";
-    if (!isUsed) document.getElementById("reason").value = "";
   }
 
-  // ── Tag input ─────────────────────────────────────────────────────────────
+  // ── Tags ──────────────────────────────────────────────────────────────────
   function handleTagInput(e) {
     if (e.key === "Enter" || e.key === ",") {
       e.preventDefault();
@@ -332,63 +358,5 @@
     el.textContent = msg; el.style.display = "block";
   }
 </script>
-<footer class="footer">
-  <div class="footer-inner">
-    <div class="footer-grid">
-
-      <!-- Brand -->
-      <div class="footer-brand">
-        <div class="logo">SellAnythingKE</div>
-        <p>Kenya's free online marketplace. Buy and sell anything — electronics, vehicles, fashion, and more.</p>
-      </div>
-
-      <!-- Quick links -->
-      <div class="footer-col">
-        <h4>Quick Links</h4>
-        <a href="/">Home</a>
-        <a href="/post-ad.html">Post an Ad</a>
-        <a href="/login.html">Login</a>
-        <a href="/register.html">Register</a>
-      </div>
-
-      <!-- Categories -->
-      <div class="footer-col">
-        <h4>Categories</h4>
-        <a href="/?cat=Phones">Phones</a>
-        <a href="/?cat=Electronics">Electronics</a>
-        <a href="/?cat=Vehicles">Vehicles</a>
-        <a href="/?cat=Fashion">Fashion</a>
-        <a href="/?cat=Home%20%26%20Garden">Home & Garden</a>
-        <a href="/?cat=Sports%20%26%20Leisure">Sports & Leisure</a>
-        <a href="/?cat=Jobs">Jobs</a>
-        <a href="/?cat=Kids%20%26%20Baby">Kids & Baby</a>
-        <a href="/?cat=Animals%20%26%20Pets">Animals & Pets</a>
-        <a href="/?cat=Services">Services</a>
-      </div>
-
-      <!-- Help -->
-      <div class="footer-col">
-        <h4>Help</h4>
-        <a href="/safety-tips.html">Safety Tips</a>
-        <a href="/how-it-works.html">How it Works</a>
-        <a href="#">Contact Us</a>
-        <a href="/privacy-policy.html">Privacy Policy</a>
-        <a href="/terms.html">Terms of Use</a>
-      </div>
-
-    </div>
-
-    <!-- Bottom bar -->
-    <div class="footer-bottom">
-      <p>© 2026 SellAnythingKE. All rights reserved.</p>
-      <div class="footer-socials">
-        <a href="#" title="Facebook">f</a>
-        <a href="#" title="Twitter">𝕏</a>
-        <a href="#" title="Instagram">📷</a>
-        <a href="#" title="WhatsApp">💬</a>
-      </div>
-    </div>
-  </div>
-</footer>
 </body>
 </html>

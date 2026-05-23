@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>How It Works — SellAnythingKE</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <style>
+    .content-page { max-width: 780px; margin: 0 auto; padding: 40px 20px 80px; }
+    .content-page h1 { font-size: 36px; margin-bottom: 8px; }
+    .content-page .subtitle { color: var(--muted); margin-bottom: 40px; font-size: 15px; }
+
+    .steps-section { margin-bottom: 48px; }
+    .steps-section h2 { font-size: 24px; margin-bottom: 24px; padding-bottom: 10px; border-bottom: 2px solid var(--border); }
+
+    .step {
+      display: flex; gap: 20px; align-items: flex-start;
+      margin-bottom: 24px; position: relative;
+    }
+    .step-number {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: var(--brand); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Bebas Neue', sans-serif; font-size: 22px;
+      flex-shrink: 0;
+    }
+    .step-body h3 { font-size: 17px; margin-bottom: 6px; }
+    .step-body p  { font-size: 14px; color: var(--muted); line-height: 1.7; }
+
+    .feature-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px; margin-bottom: 40px;
+    }
+    .feature-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px;
+      text-align: center;
+    }
+    .feature-card .icon { font-size: 32px; margin-bottom: 10px; }
+    .feature-card h3   { font-size: 15px; margin-bottom: 6px; }
+    .feature-card p    { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+    .cta-box {
+      background: linear-gradient(135deg, var(--brand), #f5914a);
+      border-radius: var(--radius); padding: 36px;
+      text-align: center; color: #fff; margin-top: 40px;
+    }
+    .cta-box h2 { font-size: 28px; margin-bottom: 8px; }
+    .cta-box p  { font-size: 15px; opacity: .9; margin-bottom: 20px; }
+    .cta-box .btn-white {
+      background: #fff; color: var(--brand);
+      padding: 12px 32px; border-radius: var(--radius);
+      font-weight: 700; font-size: 15px; display: inline-block;
+      transition: all .18s;
+    }
+    .cta-box .btn-white:hover { background: #fff0e6; }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="nav-inner">
+    <a href="/" class="nav-logo">SellAnythingKE</a>
+    <div id="nav-auth"></div>
+  </div>
+</nav>
+
+<div class="content-page">
+  <h1>How It Works</h1>
+  <p class="subtitle">SellAnythingKE is Kenya's free peer-to-peer marketplace. Here's everything you need to know.</p>
+
+  <!-- What is P2P -->
+  <div class="steps-section">
+    <h2>What is a P2P Marketplace?</h2>
+    <p style="font-size:15px;color:var(--muted);line-height:1.8;margin-bottom:16px">
+      P2P stands for <strong style="color:var(--text)">peer-to-peer</strong>. This means that on SellAnythingKE, 
+      individuals buy and sell directly with each other — there is no middleman, no warehouse, and no company 
+      holding your goods. You deal directly with the person selling or buying the item.
+    </p>
+    <p style="font-size:15px;color:var(--muted);line-height:1.8">
+      This makes buying and selling faster, cheaper, and more personal. The seller sets the price, 
+      the buyer negotiates directly, and both parties agree on how and where to complete the transaction.
+    </p>
+  </div>
+
+  <!-- Buying steps -->
+  <div class="steps-section">
+    <h2>How to Buy</h2>
+
+    <div class="step">
+      <div class="step-number">1</div>
+      <div class="step-body">
+        <h3>Browse or Search</h3>
+        <p>Use the search bar or browse categories to find what you are looking for. You can filter results by price, condition, and location to narrow down your options.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-number">2</div>
+      <div class="step-body">
+        <h3>View the Listing</h3>
+        <p>Click on any listing to see full details — photos, description, condition, reason for selling, and the seller's profile with their ratings and reviews from other buyers.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-number">3</div>
+      <div class="step-body">
+        <h3>Contact the Seller</h3>
+        <p>Use the in-app encrypted messaging system to chat with the seller, ask questions, and negotiate the price. You can also call or WhatsApp them directly if they have shared their phone number.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-number">4</div>
+      <div class="step-body">
+        <h3>Meet and Inspect</h3>
+        <p>Agree on a safe public meeting point. Inspect the item carefully before making any payment. If everything checks out, complete the transaction on the spot.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-number">5</div>
+      <div class="step-body">
+        <h3>Rate the Seller</h3>
+        <p>After completing your purchase, visit the seller's profile and leave a rating and review. This helps other buyers make informed decisions and rewards honest sellers.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Selling steps -->
+  <div class="steps-section">
+    <h2>How to Sell</h2>
+
+    <div class="step">
+      <div class="step-number">1</div>
+      <div class="step-body">
+        <h3>Create a Free Account</h3>
+        <p>Register on SellAnythingKE with your name, email, and phone number. Your account is free and takes less than a minute to set up.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-number">2</div>
+      <div class="step-body">
+        <h3>Post Your Ad</h3>
+        <p>Click the "+ Post Ad" button and fill in your listing details — title, category, condition, price, location, description, and up to 6 photos. Add tags to help buyers find your item more easily.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-number">3</div>
+      <div class="step-body">
+        <h3>Wait for Buyers</h3>
+        <p>Your listing goes live instantly and is visible to all users browsing or searching in your category. Interested buyers will message you or call you directly.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-number">4</div>
+      <div class="step-body">
+        <h3>Negotiate and Agree</h3>
+        <p>Chat with interested buyers through the platform's encrypted messaging system. Discuss the price, answer their questions, and agree on a meeting point that is convenient and safe for both of you.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-number">5</div>
+      <div class="step-body">
+        <h3>Complete the Sale</h3>
+        <p>Meet the buyer, hand over the item, collect your payment, and mark the listing as sold on your profile. It's that simple.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Features -->
+  <div class="steps-section">
+    <h2>Platform Features</h2>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="icon">🔒</div>
+        <h3>Encrypted Chat</h3>
+        <p>All messages between buyers and sellers are end-to-end encrypted for your privacy.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">⭐</div>
+        <h3>Seller Ratings</h3>
+        <p>Rate and review sellers after transactions to help build a trustworthy community.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">📸</div>
+        <h3>Photo Listings</h3>
+        <p>Upload up to 6 photos per listing so buyers can see exactly what they are getting.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">🏷️</div>
+        <h3>Smart Tags</h3>
+        <p>Add tags to your listings so buyers can find your item through search suggestions.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">📍</div>
+        <h3>Location Filter</h3>
+        <p>Filter listings by location to find sellers near you for easier meetups.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">💬</div>
+        <h3>Inbox</h3>
+        <p>All your conversations in one place — never lose track of a deal again.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta-box">
+    <h2>Ready to Get Started?</h2>
+    <p>Join thousands of Kenyans already buying and selling on SellAnythingKE</p>
+    <a href="/register.html" class="btn-white">Create Free Account</a>
+  </div>
+
+</div>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="logo">SellAnythingKE</div>
+        <p>Kenya's free online marketplace. Buy and sell anything — electronics, vehicles, fashion, and more.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Quick Links</h4>
+        <a href="/">Home</a>
+        <a href="/post-ad.html">Post an Ad</a>
+        <a href="/login.html">Login</a>
+        <a href="/register.html">Register</a>
+      </div>
+      <div class="footer-col">
+        <h4>Categories</h4>
+        <a href="/?cat=Phones">Phones</a>
+        <a href="/?cat=Electronics">Electronics</a>
+        <a href="/?cat=Vehicles">Vehicles</a>
+        <a href="/?cat=Fashion">Fashion</a>
+        <a href="/?cat=Home%20%26%20Garden">Home & Garden</a>
+        <a href="/?cat=Sports%20%26%20Leisure">Sports & Leisure</a>
+        <a href="/?cat=Jobs">Jobs</a>
+        <a href="/?cat=Kids%20%26%20Baby">Kids & Baby</a>
+        <a href="/?cat=Animals%20%26%20Pets">Animals & Pets</a>
+        <a href="/?cat=Services">Services</a>
+      </div>
+      <div class="footer-col">
+        <h4>Help</h4>
+        <a href="/safety-tips.html">Safety Tips</a>
+        <a href="/how-it-works.html">How it Works</a>
+        <a href="#">Contact Us</a>
+        <a href="/privacy-policy.html">Privacy Policy</a>
+        <a href="/terms.html">Terms of Use</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2025 SellAnythingKE. All rights reserved.</p>
+      <div class="footer-socials">
+        <a href="#" title="Facebook">f</a>
+        <a href="#" title="Twitter">𝕏</a>
+        <a href="#" title="Instagram">📷</a>
+        <a href="#" title="WhatsApp">💬</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<div class="toast-container" id="toast-container"></div>
+<script src="/js/api.js"></script>
+<script> window.addEventListener("DOMContentLoaded", () => updateNav()); </script>
+</body>
+</html>
