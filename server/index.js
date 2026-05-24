@@ -18,6 +18,7 @@ app.use("/api/auth",     require("./routes/auth"));
 app.use("/api/listings", require("./routes/listings"));
 app.use("/api/ratings",  require("./routes/ratings"));
 app.use("/api/reports",  require("./routes/reports"));
+app.use("/api/notifications", require("./routes/notifications"));
 app.use("/api/messages", require("./routes/messages"));
 app.use("/api/categories", (req, res) => {
   const db      = require("./db/database");

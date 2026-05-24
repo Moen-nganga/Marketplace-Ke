@@ -3,6 +3,7 @@ const multer   = require("multer");
 const path     = require("path");
 const fs       = require("fs");
 const db       = require("../db/database");
+const { createNotification } = require("./notifications");
 const { requireAuth, optionalAuth } = require("../middleware/auth");
 
 const router = express.Router();
@@ -413,6 +414,17 @@ router.get("/:id", optionalAuth, (req, res) => {
   if (!listing) return res.status(404).json({ error: "Listing not found" });
 
   db.prepare("UPDATE listings SET views = views + 1 WHERE id = ?").run(listing.id);
+
+  // Notify seller every 10 views
+  const newViews = listing.views + 1;
+  if (newViews % 10 === 0) {
+    createNotification(
+      listing.user_id,
+      "view",
+      `Your listing "${listing.title}" has reached ${newViews} views!`,
+      `/listing.html?id=${listing.id}`
+    );
+  }
   listing.images = JSON.parse(listing.images || "[]");
   listing.tags   = JSON.parse(listing.tags   || "[]");
   res.json(listing);

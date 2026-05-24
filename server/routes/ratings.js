@@ -1,6 +1,7 @@
 const express = require("express");
 const db      = require("../db/database");
 const { requireAuth } = require("../middleware/auth");
+const { createNotification } = require("./notifications");
 
 const router = express.Router();
 
@@ -50,6 +51,16 @@ router.post("/:userId", requireAuth, (req, res) => {
       VALUES (?, ?, ?, ?)
     `).run(rater_id, rated_id, score, review || null);
   }
+
+  // Notify the rated user
+  const rater = db.prepare("SELECT name FROM users WHERE id = ?").get(rater_id);
+  const rated = db.prepare("SELECT name FROM users WHERE id = ?").get(rated_id);
+  createNotification(
+    rated_id,
+    "rating",
+    `${rater.name} gave you a ${score}-star rating`,
+    `/profile.html?id=${rated_id}`
+  );
 
   res.json({ success: true });
 });

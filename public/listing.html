@@ -38,14 +38,7 @@
   window.addEventListener("DOMContentLoaded", async () => {
     updateNav();
     if (!id) { window.location.href = "/"; return; }
-    try {
-      const l = await api.getListing(id);
-      document.title = `${l.title} — SellAnythingKE`;
-      render(l);
-    } catch (e) {
-      document.getElementById("listing-content").innerHTML =
-        `<div class="empty-state"><div class="icon">😕</div><h3>Listing not found</h3><p>${e.message}</p></div>`;
-    }
+    await loadListing();
   });
 
   function render(listing) {
@@ -71,12 +64,6 @@
         <button class="btn btn-ghost" style="color:#dc2626;border-color:#dc2626" onclick="deleteListing()">Delete</button>
       </div>` : "";
 
-    // Reports button shown to everyone if listing has reports
-    const reportsBtn = `
-      <button id="view-reports-btn" class="btn btn-ghost btn-full"
-              style="display:none;color:#b45309;border-color:#b45309;font-size:13px;margin-top:8px"
-              onclick="viewReports()">⚠️ Check Available Reports</button>`;
-
     const contactSection = !isOwner ? `
       <div style="margin-top:16px;display:flex;flex-direction:column;gap:10px">
         ${l.seller_phone
@@ -86,9 +73,6 @@
         <button class="btn btn-ghost btn-full" onclick="messageseller()">✉️ Send Message</button>
         <button class="btn btn-ghost btn-full" style="color:#dc2626;border-color:#dc2626;font-size:13px"
                 onclick="showReportModal()">🚩 Report Listing</button>
-        <button id="view-reports-btn" class="btn btn-ghost btn-full"
-                style="display:none;color:#b45309;border-color:#b45309;font-size:13px"
-                onclick="viewReports()">⚠️ Check Available Reports</button>
       </div>` : "";
 
     document.getElementById("listing-content").innerHTML = `
@@ -96,7 +80,7 @@
         <div class="gallery">${gallery}</div>
         <div>
           <h1 style="font-size:22px;line-height:1.3;margin-bottom:8px">${l.title}</h1>
-          <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--brand);margin-bottom:14px">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;font-weight:800;color:var(--brand);margin-bottom:14px">
             ${formatPrice(l.price)}
           </div>
           <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px">
@@ -104,7 +88,12 @@
             <span style="background:var(--bg);padding:3px 10px;border-radius:20px;font-size:12px;font-weight:500">${l.category_icon} ${l.category_name}</span>
             <span style="background:var(--bg);padding:3px 10px;border-radius:20px;font-size:12px">📍 ${l.location}</span>
           </div>
-          <div style="font-size:13px;color:var(--muted);margin-bottom:18px">👁 ${l.views} views · Posted ${timeAgo(l.created_at)}</div>
+          <div style="font-size:13px;color:var(--muted);margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+            <span>👁 ${l.views} views · Posted ${timeAgo(l.created_at)}</span>
+            <button class="btn btn-ghost" onclick="shareListng()" style="font-size:13px;padding:6px 14px">
+              🔗 Share
+            </button>
+          </div>
           <div style="background:var(--bg);border-radius:var(--radius);padding:16px;margin-bottom:12px">
             <h3 style="font-size:15px;margin-bottom:8px">Description</h3>
             <p style="font-size:14px;white-space:pre-line">${l.description}</p>
@@ -136,7 +125,13 @@
             </div>
             ${contactSection}
             ${ownerActions}
-            ${reportsBtn}
+            <!-- Reports button always here, hidden by default, shown by loadListing -->
+            <button id="view-reports-btn"
+                    class="btn btn-ghost btn-full"
+                    style="display:none;color:#b45309;border-color:#b45309;font-size:13px;margin-top:8px"
+                    onclick="viewReports()">
+              ⚠️ Check Reports
+            </button>
           </div>
         </div>
       </div>`;
@@ -242,22 +237,27 @@
       const l = await api.getListing(id);
       document.title = `${l.title} — SellAnythingKE`;
       render(l);
-
-      // Always check for reports — show button to everyone
-      try {
-        const { count } = await api.getListingReports(id);
-        if (count > 0) {
-          const reportBtn = document.getElementById("view-reports-btn");
-          if (reportBtn) {
-            reportBtn.style.display = "";
-            reportBtn.textContent = `⚠️ Check Reports (${count})`;
-          }
-        }
-      } catch {}
-
     } catch (e) {
       document.getElementById("listing-content").innerHTML =
         `<div class="empty-state"><div class="icon">😕</div><h3>Listing not found</h3><p>${e.message}</p></div>`;
+      return;
+    }
+
+    // Separate try so render errors don't kill the reports check
+    try {
+      const result = await fetch(`/api/reports/listing/${id}`);
+      const { count } = await result.json();
+      console.log("Reports count:", count);
+      if (count > 0) {
+        const btn = document.getElementById("view-reports-btn");
+        console.log("Button element:", btn);
+        if (btn) {
+          btn.style.display = "block";
+          btn.textContent   = `⚠️ Check Reports (${count})`;
+        }
+      }
+    } catch (e) {
+      console.log("Reports fetch error:", e.message);
     }
   }
 
@@ -338,6 +338,134 @@
     }
   }
   
+  // ── Share listing ───────────────────────────────────────────────────────────
+  function shareListng() {
+    const url   = window.location.href;
+    const title = l.title;
+    const price = formatPrice(l.price);
+    const text  = `Check out this listing on SellAnythingKE: ${title} — ${price}`;
+
+    const modal = document.createElement("div");
+    modal.className = "modal-overlay";
+    modal.id = "share-modal";
+    modal.innerHTML = `
+      <div class="modal" style="max-width:400px">
+        <h3 style="margin-bottom:4px">🔗 Share Listing</h3>
+        <p style="margin-bottom:20px">${title}</p>
+
+        <div style="display:flex;flex-direction:column;gap:10px">
+
+          <!-- WhatsApp -->
+          <div class="share-option" onclick="shareWhatsApp('${encodeURIComponent(text + ' ' + url)}')">
+            <span class="share-icon">💬</span>
+            <div class="share-label">
+              Share on WhatsApp
+              <div class="share-sub">Send to a contact or group</div>
+            </div>
+            <span style="color:var(--muted);font-size:12px">→</span>
+          </div>
+
+          <!-- Copy link -->
+          <div class="share-option" id="copy-btn" onclick="copyLink('${url}')">
+            <span class="share-icon">📋</span>
+            <div class="share-label">
+              Copy Link
+              <div class="share-sub">${url}</div>
+            </div>
+            <span style="color:var(--muted);font-size:12px">→</span>
+          </div>
+
+          <!-- Native share (mobile) -->
+          ${navigator.share ? `
+          <div class="share-option" onclick="nativeShare('${encodeURIComponent(title)}', '${encodeURIComponent(text)}', '${encodeURIComponent(url)}')">
+            <span class="share-icon">📤</span>
+            <div class="share-label">
+              More options
+              <div class="share-sub">Share via other apps</div>
+            </div>
+            <span style="color:var(--muted);font-size:12px">→</span>
+          </div>` : ""}
+
+          <!-- SMS -->
+          <div class="share-option" onclick="shareSMS('${encodeURIComponent(text + ' ' + url)}')">
+            <span class="share-icon">📱</span>
+            <div class="share-label">
+              Share via SMS
+              <div class="share-sub">Send as a text message</div>
+            </div>
+            <span style="color:var(--muted);font-size:12px">→</span>
+          </div>
+
+          <!-- Email -->
+          <div class="share-option" onclick="shareEmail('${encodeURIComponent(title)}', '${encodeURIComponent(text + '\n\n' + url)}')">
+            <span class="share-icon">📧</span>
+            <div class="share-label">
+              Share via Email
+              <div class="share-sub">Send to someone's inbox</div>
+            </div>
+            <span style="color:var(--muted);font-size:12px">→</span>
+          </div>
+
+        </div>
+
+        <div class="modal-footer" style="margin-top:20px">
+          <button class="btn btn-ghost" onclick="document.getElementById('share-modal').remove()">Close</button>
+        </div>
+      </div>`;
+
+    document.body.appendChild(modal);
+    modal.addEventListener("click", e => { if (e.target === modal) modal.remove(); });
+  }
+
+  function shareWhatsApp(encodedText) {
+    window.open(`https://wa.me/?text=${encodedText}`, "_blank");
+  }
+
+  async function copyLink(url) {
+    try {
+      await navigator.clipboard.writeText(url);
+      const btn = document.getElementById("copy-btn");
+      btn.classList.add("copy-success");
+      btn.querySelector(".share-label").innerHTML = `
+        Link copied!
+        <div class="share-sub">Paste it anywhere to share</div>`;
+      setTimeout(() => {
+        btn.classList.remove("copy-success");
+        btn.querySelector(".share-label").innerHTML = `
+          Copy Link
+          <div class="share-sub">${url}</div>`;
+      }, 2500);
+    } catch {
+      // Fallback for browsers that block clipboard
+      const input = document.createElement("input");
+      input.value = url;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand("copy");
+      document.body.removeChild(input);
+      toast("Link copied!", "success");
+    }
+  }
+
+  async function nativeShare(title, text, url) {
+    try {
+      await navigator.share({
+        title: decodeURIComponent(title),
+        text:  decodeURIComponent(text),
+        url:   decodeURIComponent(url),
+      });
+    } catch {}
+  }
+
+  function shareSMS(encodedText) {
+    window.open(`sms:?body=${encodedText}`, "_blank");
+  }
+
+  function shareEmail(encodedTitle, encodedBody) {
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&su=${encodedTitle}&body=${encodedBody}`;
+    window.open(gmailUrl, "_blank");
+  }
+
 </script>
 <footer class="footer">
   <div class="footer-inner">

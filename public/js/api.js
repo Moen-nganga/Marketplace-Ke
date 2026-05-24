@@ -56,6 +56,8 @@ const api = {
   sendMessage:     (convId, body) => apiFetch(`/messages/${convId}`, { method: "POST", body: JSON.stringify(body) }),
   getUnreadCount:  ()             => apiFetch("/messages/unread/count"),
   markAsRead:      (convId)       => apiFetch(`/messages/${convId}/read`, { method: "POST" }),
+  getNotifications: ()            => apiFetch("/notifications"),
+  markNotifsRead:   ()            => apiFetch("/notifications/read", { method: "POST" }),
 };
 
 // ── Encryption (AES-GCM) ─────────────────────────────────────────────────────
@@ -134,6 +136,15 @@ function updateNav() {
       <div class="notif-wrap">
         <a href="/inbox.html" class="btn btn-ghost" style="padding:9px 14px" id="inbox-btn">💬</a>
       </div>
+      <div class="notif-wrap">
+        <button class="btn btn-ghost" style="padding:9px 14px" id="notif-btn" onclick="toggleNotifPanel()">🔔</button>
+        <div id="notif-panel" style="
+          display:none;position:absolute;top:62px;right:0;width:320px;
+          background:var(--surface);border:1px solid var(--border);
+          border-radius:var(--radius);box-shadow:var(--shadow-lg);
+          z-index:500;overflow:hidden;
+        "></div>
+      </div>
       <a href="/profile.html?id=${user.id}" class="nav-user">
         ${user.avatar
           ? `<img src="${user.avatar}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid var(--brand)" />`
@@ -142,6 +153,7 @@ function updateNav() {
       </a>
       <button class="btn btn-ghost" onclick="logout()">Logout</button>`;
     loadUnreadBadge();
+    loadNotifBadge();
   } else {
     navAuth.innerHTML = `
       <a href="/login.html" class="btn btn-ghost">Login</a>
@@ -186,4 +198,94 @@ async function loadUnreadBadge() {
       wrap.appendChild(badge);
     }
   } catch {}
+}
+
+async function loadNotifBadge() {
+  if (!isLoggedIn()) return;
+  try {
+    const { unread } = await api.getNotifications();
+    const wrap = document.querySelector("#notif-btn")?.parentElement;
+    if (!wrap) return;
+    const old = wrap.querySelector(".notif-badge");
+    if (old) old.remove();
+    if (unread > 0) {
+      const badge = document.createElement("div");
+      badge.className   = "notif-badge";
+      badge.textContent = unread > 9 ? "9+" : unread;
+      wrap.appendChild(badge);
+    }
+  } catch {}
+}
+
+async function toggleNotifPanel() {
+  const panel = document.getElementById("notif-panel");
+  if (!panel) return;
+
+  if (panel.style.display === "block") {
+    panel.style.display = "none";
+    return;
+  }
+
+  panel.style.display = "block";
+  panel.innerHTML = `<div style="padding:16px;text-align:center;color:var(--muted);font-size:13px">Loading…</div>`;
+
+  try {
+    const { notifications } = await api.getNotifications();
+
+    // Mark all as read
+    await api.markNotifsRead();
+    // Remove badge
+    const badge = document.querySelector("#notif-btn + .notif-badge, #notif-btn ~ .notif-badge");
+    if (badge) badge.remove();
+    const wrap = document.querySelector("#notif-btn")?.parentElement;
+    if (wrap) {
+      const b = wrap.querySelector(".notif-badge");
+      if (b) b.remove();
+    }
+
+    if (!notifications.length) {
+      panel.innerHTML = `
+        <div style="padding:24px;text-align:center">
+          <div style="font-size:28px;margin-bottom:8px">🔔</div>
+          <div style="font-size:13px;color:var(--muted)">No notifications yet</div>
+        </div>`;
+      return;
+    }
+
+    const icons = { view: "👁", rating: "⭐", message: "💬" };
+
+    panel.innerHTML = `
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border);font-weight:600;font-size:14px">
+        Notifications
+      </div>
+      <div style="max-height:360px;overflow-y:auto">
+        ${notifications.map(n => `
+          <div onclick="${n.link ? `window.location='${n.link}'` : ''}"
+               style="padding:12px 16px;border-bottom:1px solid var(--border);
+                      display:flex;gap:12px;align-items:flex-start;
+                      cursor:${n.link ? 'pointer' : 'default'};
+                      background:${n.is_read ? 'transparent' : '#fff8f0'};
+                      transition:background .15s"
+               onmouseover="this.style.background='#fff0e6'"
+               onmouseout="this.style.background='${n.is_read ? 'transparent' : '#fff8f0'}'">
+            <span style="font-size:20px;flex-shrink:0">${icons[n.type] || '🔔'}</span>
+            <div>
+              <div style="font-size:13px;font-weight:500;color:var(--text)">${n.message}</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:3px">${timeAgo(n.created_at)}</div>
+            </div>
+          </div>`).join("")}
+      </div>`;
+  } catch (e) {
+    panel.innerHTML = `<div style="padding:16px;color:red;font-size:13px">${e.message}</div>`;
+  }
+
+  // Close panel when clicking outside
+  setTimeout(() => {
+    document.addEventListener("click", function closePanel(e) {
+      if (!panel.contains(e.target) && e.target.id !== "notif-btn") {
+        panel.style.display = "none";
+        document.removeEventListener("click", closePanel);
+      }
+    });
+  }, 100);
 }
