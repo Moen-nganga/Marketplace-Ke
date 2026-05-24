@@ -133,8 +133,12 @@
   function renderHeader(name, listingCount) {
     const initial  = name[0].toUpperCase();
     const avatar   = profileData.avatar;
-    const chatBtn  = (!isOwnProfile && me) ? `
-      <button class="btn btn-primary" onclick="startChat()">💬 Message Seller</button>` : "";
+    const chatBtn = (!isOwnProfile && me) ? `
+      <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+        <button class="btn btn-primary" onclick="startChat()">💬 Message Seller</button>
+        <button class="btn btn-ghost" style="color:#dc2626;border-color:#dc2626;font-size:12px"
+                onclick="showUserReportModal()">🚩 Report User</button>
+      </div>` : "";
     const ownBadge = isOwnProfile
       ? `<span style="background:#fff0e6;color:var(--brand);padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600">Your Profile</span>` : "";
 
@@ -389,6 +393,75 @@
       toast("Profile photo updated!", "success");
     } catch (e) {
       toast(e.message, "error");
+    }
+  }
+  
+  function showUserReportModal() {
+    if (!me) { window.location.href = "/login.html"; return; }
+
+    const modal = document.createElement("div");
+    modal.className = "modal-overlay";
+    modal.id = "report-modal";
+    modal.innerHTML = `
+      <div class="modal">
+        <h3>🚩 Report User</h3>
+        <p>Help us keep SellAnythingKE safe. Tell us what's wrong with this user.</p>
+
+        <div class="form-group">
+          <label style="font-size:14px;font-weight:500;margin-bottom:6px;display:block">Reason *</label>
+          <select id="report-reason" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:var(--radius);font-size:14px;outline:none;background:var(--bg)">
+            <option value="">Select a reason</option>
+            <option value="scam">Scammer or fraudster</option>
+            <option value="fake_profile">Fake profile</option>
+            <option value="harassment">Harassment or threatening behaviour</option>
+            <option value="spam">Spam</option>
+            <option value="offensive">Offensive behaviour</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label style="font-size:14px;font-weight:500;margin-bottom:6px;display:block">
+            Additional details <span style="color:var(--muted);font-weight:400">(optional)</span>
+          </label>
+          <textarea id="report-details"
+            placeholder="Describe the issue in more detail…"
+            style="width:100%;padding:10px 14px;border:1.5px solid var(--border);
+                   border-radius:var(--radius);font-size:14px;outline:none;
+                   background:var(--bg);min-height:80px;resize:vertical"></textarea>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-ghost" onclick="closeReportModal()">Cancel</button>
+          <button class="btn btn-primary" id="submit-report-btn" onclick="submitUserReport()">Submit Report</button>
+        </div>
+      </div>`;
+
+    document.body.appendChild(modal);
+    modal.addEventListener("click", e => { if (e.target === modal) closeReportModal(); });
+  }
+
+  function closeReportModal() {
+    const modal = document.getElementById("report-modal");
+    if (modal) modal.remove();
+  }
+
+  async function submitUserReport() {
+    const reason  = document.getElementById("report-reason").value;
+    const details = document.getElementById("report-details").value.trim();
+    const btn     = document.getElementById("submit-report-btn");
+
+    if (!reason) { toast("Please select a reason", "error"); return; }
+
+    btn.disabled = true; btn.textContent = "Submitting…";
+
+    try {
+      await api.submitReport({ user_id: profileId, reason, details });
+      closeReportModal();
+      toast("Report submitted. Thank you for helping keep the community safe!", "success");
+    } catch (e) {
+      toast(e.message, "error");
+      btn.disabled = false; btn.textContent = "Submit Report";
     }
   }
   

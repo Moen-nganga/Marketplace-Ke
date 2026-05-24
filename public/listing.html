@@ -71,6 +71,12 @@
         <button class="btn btn-ghost" style="color:#dc2626;border-color:#dc2626" onclick="deleteListing()">Delete</button>
       </div>` : "";
 
+    // Reports button shown to everyone if listing has reports
+    const reportsBtn = `
+      <button id="view-reports-btn" class="btn btn-ghost btn-full"
+              style="display:none;color:#b45309;border-color:#b45309;font-size:13px;margin-top:8px"
+              onclick="viewReports()">⚠️ Check Available Reports</button>`;
+
     const contactSection = !isOwner ? `
       <div style="margin-top:16px;display:flex;flex-direction:column;gap:10px">
         ${l.seller_phone
@@ -78,6 +84,11 @@
              <a href="https://wa.me/${l.seller_phone.replace(/\D/g,'')}" target="_blank" class="btn btn-ghost btn-full">💬 WhatsApp</a>`
           : `<p style="color:var(--muted);font-size:13px;text-align:center">No phone number listed</p>`}
         <button class="btn btn-ghost btn-full" onclick="messageseller()">✉️ Send Message</button>
+        <button class="btn btn-ghost btn-full" style="color:#dc2626;border-color:#dc2626;font-size:13px"
+                onclick="showReportModal()">🚩 Report Listing</button>
+        <button id="view-reports-btn" class="btn btn-ghost btn-full"
+                style="display:none;color:#b45309;border-color:#b45309;font-size:13px"
+                onclick="viewReports()">⚠️ Check Available Reports</button>
       </div>` : "";
 
     document.getElementById("listing-content").innerHTML = `
@@ -125,6 +136,7 @@
             </div>
             ${contactSection}
             ${ownerActions}
+            ${reportsBtn}
           </div>
         </div>
       </div>`;
@@ -171,6 +183,161 @@
       window.location.href = `/chat.html?id=${conv.id}`;
     } catch (e) { toast(e.message, "error"); }
   }
+
+  // ── Report modal ────────────────────────────────────────────────────────────
+  function showReportModal() {
+    if (!getUser()) { window.location.href = "/login.html"; return; }
+
+    const modal = document.createElement("div");
+    modal.className = "modal-overlay";
+    modal.id = "report-modal";
+    modal.innerHTML = `
+      <div class="modal">
+        <h3>🚩 Report Listing</h3>
+        <p>Help us keep SellAnythingKE safe. Tell us what's wrong with this listing.</p>
+
+        <div class="form-group">
+          <label style="font-size:14px;font-weight:500;margin-bottom:6px;display:block">Reason *</label>
+          <select id="report-reason" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:var(--radius);font-size:14px;outline:none;background:var(--bg)">
+            <option value="">Select a reason</option>
+            <option value="scam">Scam or fraud</option>
+            <option value="fake">Fake or counterfeit item</option>
+            <option value="wrong_category">Wrong category</option>
+            <option value="prohibited">Prohibited item</option>
+            <option value="misleading">Misleading description or photos</option>
+            <option value="spam">Spam or duplicate listing</option>
+            <option value="offensive">Offensive content</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label style="font-size:14px;font-weight:500;margin-bottom:6px;display:block">
+            Additional details <span style="color:var(--muted);font-weight:400">(optional)</span>
+          </label>
+          <textarea id="report-details"
+            placeholder="Describe the issue in more detail…"
+            style="width:100%;padding:10px 14px;border:1.5px solid var(--border);
+                   border-radius:var(--radius);font-size:14px;outline:none;
+                   background:var(--bg);min-height:80px;resize:vertical"></textarea>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-ghost" onclick="closeReportModal()">Cancel</button>
+          <button class="btn btn-primary" id="submit-report-btn" onclick="submitReport()">Submit Report</button>
+        </div>
+      </div>`;
+
+    document.body.appendChild(modal);
+    modal.addEventListener("click", e => { if (e.target === modal) closeReportModal(); });
+  }
+
+  function closeReportModal() {
+    const modal = document.getElementById("report-modal");
+    if (modal) modal.remove();
+  }
+
+  async function loadListing() {
+    try {
+      const l = await api.getListing(id);
+      document.title = `${l.title} — SellAnythingKE`;
+      render(l);
+
+      // Always check for reports — show button to everyone
+      try {
+        const { count } = await api.getListingReports(id);
+        if (count > 0) {
+          const reportBtn = document.getElementById("view-reports-btn");
+          if (reportBtn) {
+            reportBtn.style.display = "";
+            reportBtn.textContent = `⚠️ Check Reports (${count})`;
+          }
+        }
+      } catch {}
+
+    } catch (e) {
+      document.getElementById("listing-content").innerHTML =
+        `<div class="empty-state"><div class="icon">😕</div><h3>Listing not found</h3><p>${e.message}</p></div>`;
+    }
+  }
+
+  async function submitReport() {
+    const reason  = document.getElementById("report-reason").value;
+    const details = document.getElementById("report-details").value.trim();
+    const btn     = document.getElementById("submit-report-btn");
+
+    if (!reason) { toast("Please select a reason", "error"); return; }
+
+    btn.disabled = true; btn.textContent = "Submitting…";
+
+    try {
+      await api.submitReport({ listing_id: l.id, reason, details });
+      closeReportModal();
+      toast("Report submitted. Thank you for helping keep the community safe!", "success");
+    } catch (e) {
+      toast(e.message, "error");
+      btn.disabled = false; btn.textContent = "Submit Report";
+    }
+  }
+  
+  async function viewReports() {
+    try {
+      const { count, reports } = await api.getListingReports(id);
+
+      const modal = document.createElement("div");
+      modal.className = "modal-overlay";
+      modal.id = "reports-view-modal";
+
+      const reasonLabels = {
+        scam:          "Scam or fraud",
+        fake:          "Fake or counterfeit item",
+        wrong_category:"Wrong category",
+        prohibited:    "Prohibited item",
+        misleading:    "Misleading description or photos",
+        spam:          "Spam or duplicate listing",
+        offensive:     "Offensive content",
+        other:         "Other",
+      };
+
+      modal.innerHTML = `
+        <div class="modal" style="max-width:520px">
+          <h3>⚠️ Reports for this listing</h3>
+          <p>This listing has been reported <strong>${count}</strong> time${count !== 1 ? "s" : ""}. 
+             Use this information to make an informed decision.</p>
+
+          <div style="display:flex;flex-direction:column;gap:10px;max-height:320px;overflow-y:auto">
+            ${reports.map(r => `
+              <div style="background:var(--bg);border-radius:var(--radius);padding:14px 16px;border:1px solid var(--border)">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+                  <span style="font-weight:600;font-size:13px;color:#b45309">
+                    ${reasonLabels[r.reason] || r.reason}
+                  </span>
+                  <span style="font-size:11px;color:var(--muted)">${timeAgo(r.created_at)}</span>
+                </div>
+                ${r.details
+                  ? `<p style="font-size:13px;color:var(--muted);margin:0">"${r.details}"</p>`
+                  : `<p style="font-size:12px;color:var(--muted);margin:0;font-style:italic">No additional details provided</p>`}
+                <div style="font-size:11px;color:var(--muted);margin-top:6px">
+                  Reported by ${r.reporter_name}
+                </div>
+              </div>`).join("")}
+          </div>
+
+          <div class="modal-footer">
+            <button class="btn btn-ghost" onclick="document.getElementById('reports-view-modal').remove()">Close</button>
+            <a href="/safety-tips.html" class="btn btn-primary">View Safety Tips</a>
+          </div>
+        </div>`;
+
+      document.body.appendChild(modal);
+      modal.addEventListener("click", e => {
+        if (e.target === modal) modal.remove();
+      });
+    } catch (e) {
+      toast(e.message, "error");
+    }
+  }
+  
 </script>
 <footer class="footer">
   <div class="footer-inner">

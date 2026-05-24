@@ -114,6 +114,77 @@ try {
   // already exists
 }
 
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS reports (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      reporter_id INTEGER NOT NULL,
+      listing_id  INTEGER,
+      user_id     INTEGER,
+      reason      TEXT NOT NULL,
+      details     TEXT,
+      status      TEXT DEFAULT 'pending',
+      created_at  TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (reporter_id) REFERENCES users(id),
+      FOREIGN KEY (listing_id)  REFERENCES listings(id),
+      FOREIGN KEY (user_id)     REFERENCES users(id)
+    );
+  `);
+  console.log("✅ Reports table ready");
+} catch {
+  // already exists
+}
+
+// ── FTS5 full-text search index ───────────────────────────────────────────────
+try {
+  db.exec(`
+    CREATE VIRTUAL TABLE IF NOT EXISTS listings_fts USING fts5(
+      title,
+      description,
+      tags,
+      location,
+      content='listings',
+      content_rowid='id'
+    );
+
+    -- Keep FTS index in sync with listings table
+    CREATE TRIGGER IF NOT EXISTS listings_ai AFTER INSERT ON listings BEGIN
+      INSERT INTO listings_fts(rowid, title, description, tags, location)
+      VALUES (new.id, new.title, new.description, new.tags, new.location);
+    END;
+
+    CREATE TRIGGER IF NOT EXISTS listings_ad AFTER DELETE ON listings BEGIN
+      INSERT INTO listings_fts(listings_fts, rowid, title, description, tags, location)
+      VALUES ('delete', old.id, old.title, old.description, old.tags, old.location);
+    END;
+
+    CREATE TRIGGER IF NOT EXISTS listings_au AFTER UPDATE ON listings BEGIN
+      INSERT INTO listings_fts(listings_fts, rowid, title, description, tags, location)
+      VALUES ('delete', old.id, old.title, old.description, old.tags, old.location);
+      INSERT INTO listings_fts(rowid, title, description, tags, location)
+      VALUES (new.id, new.title, new.description, new.tags, new.location);
+    END;
+  `);
+  console.log("✅ FTS5 search index ready");
+} catch (e) {
+  console.log("FTS5 already set up:", e.message);
+}
+
+// Populate FTS index with existing listings
+try {
+  const isEmpty = db.prepare("SELECT COUNT(*) AS n FROM listings_fts").get().n === 0;
+  if (isEmpty) {
+    db.exec(`
+      INSERT INTO listings_fts(rowid, title, description, tags, location)
+      SELECT id, title, description, COALESCE(tags, '[]'), COALESCE(location, '')
+      FROM listings WHERE status != 'deleted'
+    `);
+    console.log("✅ FTS5 index populated with existing listings");
+  }
+} catch (e) {
+  console.log("FTS5 population skipped:", e.message);
+}
+
 const count = db.prepare("SELECT COUNT(*) AS n FROM categories").get().n;
 
 if (count === 0) {

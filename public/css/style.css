@@ -226,3 +226,26 @@ h1,h2,h3,h4 { font-family: 'Bebas Neue', sans-serif; font-weight: 400; line-heig
 @media (max-width: 480px) {
   .footer-grid { grid-template-columns: 1fr; }
 }
+
+/* ── Modal ───────────────────────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.5);
+  z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  animation: fadeIn .2s ease;
+}
+.modal {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 28px;
+  width: 100%; max-width: 440px;
+  box-shadow: var(--shadow-lg);
+  animation: slideUp .2s ease;
+}
+.modal h3     { font-size: 20px; margin-bottom: 6px; }
+.modal p      { font-size: 14px; color: var(--muted); margin-bottom: 20px; }
+.modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+@keyframes fadeIn  { from { opacity: 0; } }
+@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } }

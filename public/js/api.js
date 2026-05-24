@@ -40,11 +40,14 @@ const api = {
   getCategories:   ()            => apiFetch("/categories"),
   searchUsers:     (q)           => apiFetch(`/listings/search/users?q=${encodeURIComponent(q)}`),
   suggestTags:     (q)           => apiFetch(`/listings/tags/suggest?q=${encodeURIComponent(q)}`),
+  suggestListings: (q)           => apiFetch(`/listings/suggest?q=${encodeURIComponent(q)}`),
 
   // ── Ratings ───────────────────────────────────────────────────────────────
   getRatings:      (userId)       => apiFetch(`/ratings/${userId}`),
   submitRating:    (userId, body) => apiFetch(`/ratings/${userId}`, { method: "POST", body: JSON.stringify(body) }),
   deleteRating:    (userId)       => apiFetch(`/ratings/${userId}`, { method: "DELETE" }),
+  submitReport:      (body)  => apiFetch("/reports", { method: "POST", body: JSON.stringify(body) }),
+  getListingReports: (id)    => apiFetch(`/reports/listing/${id}`),
 
   // ── Messages ──────────────────────────────────────────────────────────────
   getInbox:        ()             => apiFetch("/messages/inbox"),
