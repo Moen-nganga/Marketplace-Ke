@@ -2,6 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <script>
+  (function() {
+    const t = localStorage.getItem("theme");
+    if (t) document.documentElement.setAttribute("data-theme", t);
+  })();
+</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Listing — SellAnythingKE</title>
   <link rel="stylesheet" href="/css/style.css" />
@@ -29,6 +35,14 @@
   </div>
 </main>
 
+<!-- Related listings -->
+<div class="container" style="padding-bottom:60px">
+  <div id="related-section" style="display:none">
+    <h2 style="font-size:22px;margin-bottom:16px;margin-top:8px">You Might Also Like</h2>
+    <div id="related-grid" class="listings-grid"></div>
+  </div>
+</div>
+
 <div class="toast-container" id="toast-container"></div>
 <script src="/js/api.js"></script>
 <script>
@@ -55,12 +69,22 @@
          </div>`
       : `<div class="gallery-main">${l.category_icon || "📦"}</div>`;
 
+    const isPromoted  = l.is_promoted && (!l.promoted_until || new Date(l.promoted_until) > new Date());
     const ownerActions = isOwner ? `
       <div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap">
         ${l.status === "active"
           ? `<button class="btn btn-ghost" onclick="markSold()">Mark as Sold</button>`
           : `<span class="badge badge-sold" style="padding:8px 16px">Sold</span>`}
         <a href="/edit-listing.html?id=${l.id}" class="btn btn-ghost">✏️ Edit</a>
+        ${l.status === "active" ? `
+          ${isPromoted
+            ? `<span style="background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;
+                           padding:8px 14px;border-radius:var(--radius);font-size:13px;font-weight:600">
+                ⭐ Featured until ${new Date(l.promoted_until).toLocaleDateString("en-KE")}
+               </span>`
+            : `<button class="btn btn-ghost" style="color:#f59e0b;border-color:#f59e0b"
+                       onclick="promoteListng()">⭐ Promote Listing</button>`
+          }` : ""}
         <button class="btn btn-ghost" style="color:#dc2626;border-color:#dc2626" onclick="deleteListing()">Delete</button>
       </div>` : "";
 
@@ -243,22 +267,25 @@
       return;
     }
 
-    // Separate try so render errors don't kill the reports check
+    // Reports check
     try {
       const result = await fetch(`/api/reports/listing/${id}`);
       const { count } = await result.json();
-      console.log("Reports count:", count);
-      if (count > 0) {
-        const btn = document.getElementById("view-reports-btn");
-        console.log("Button element:", btn);
-        if (btn) {
-          btn.style.display = "block";
-          btn.textContent   = `⚠️ Check Reports (${count})`;
-        }
+      const reportBtn = document.getElementById("view-reports-btn");
+      if (count > 0 && reportBtn) {
+        reportBtn.style.display = "block";
+        reportBtn.textContent = `⚠️ Check Reports (${count})`;
       }
-    } catch (e) {
-      console.log("Reports fetch error:", e.message);
-    }
+    } catch {}
+
+    // Related listings
+    try {
+      const related = await api.getRelatedListings(id);
+      if (related.length) {
+        document.getElementById("related-section").style.display = "";
+        document.getElementById("related-grid").innerHTML = related.map(relatedCard).join("");
+      }
+    } catch {}
   }
 
   async function submitReport() {
@@ -464,6 +491,79 @@
   function shareEmail(encodedTitle, encodedBody) {
     const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&su=${encodedTitle}&body=${encodedBody}`;
     window.open(gmailUrl, "_blank");
+  }
+
+// ── Related listings card ───────────────────────────────────────────────────
+  function relatedCard(item) {
+    const img   = item.images?.length
+      ? `<img src="${item.images[0]}" alt="${item.title}" loading="lazy" />`
+      : `<span>${item.category_icon || "📦"}</span>`;
+    const badge = item.condition === "new" ? "badge-new" : "badge-used";
+    return `
+      <div class="listing-card" onclick="window.location='/listing.html?id=${item.id}'">
+        <div class="card-img">${img}</div>
+        <div class="card-body">
+          <div class="card-price">${formatPrice(item.price)}</div>
+          <div class="card-title">${item.title}</div>
+          <div class="card-meta">
+            <span class="badge ${badge}">${conditionLabel(item.condition)}</span>
+            <span>📍 ${item.location}</span>
+          </div>
+          <div class="card-meta" style="margin-top:4px">
+            <span>${item.category_icon} ${item.category_name}</span>
+            <span>${timeAgo(item.created_at)}</span>
+          </div>
+        </div>
+      </div>`;
+  }
+
+async function promoteListng() {
+    const modal = document.createElement("div");
+    modal.className = "modal-overlay";
+    modal.id = "promote-modal";
+    modal.innerHTML = `
+      <div class="modal" style="max-width:420px">
+        <h3>⭐ Promote Your Listing</h3>
+        <p>Promoted listings appear at the top of search results and category pages with a Featured badge for <strong>7 days</strong>.</p>
+
+        <div style="background:#fff8f0;border:1px solid #ffd4b3;border-radius:var(--radius);padding:16px;margin:16px 0">
+          <div style="font-weight:600;margin-bottom:8px">What you get:</div>
+          <div style="font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:6px">
+            <span>✅ Pinned to top of listings for 7 days</span>
+            <span>✅ ⭐ Featured badge on your listing card</span>
+            <span>✅ Gold border to stand out from other listings</span>
+            <span>✅ More visibility = more buyers</span>
+          </div>
+        </div>
+
+        <div style="text-align:center;font-size:13px;color:var(--muted);margin-bottom:16px">
+          This feature is currently <strong style="color:var(--success)">free</strong> during our beta period!
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-ghost" onclick="document.getElementById('promote-modal').remove()">Cancel</button>
+          <button class="btn btn-primary" id="confirm-promote-btn" onclick="confirmPromote()">
+            ⭐ Promote for Free
+          </button>
+        </div>
+      </div>`;
+
+    document.body.appendChild(modal);
+    modal.addEventListener("click", e => { if (e.target === modal) modal.remove(); });
+  }
+
+  async function confirmPromote() {
+    const btn = document.getElementById("confirm-promote-btn");
+    btn.disabled = true; btn.textContent = "Promoting…";
+    try {
+      await api.promoteListing(id);
+      document.getElementById("promote-modal").remove();
+      toast("Your listing is now promoted! ⭐", "success");
+      setTimeout(() => location.reload(), 1000);
+    } catch (e) {
+      toast(e.message, "error");
+      btn.disabled = false; btn.textContent = "⭐ Promote for Free";
+    }
   }
 
 </script>

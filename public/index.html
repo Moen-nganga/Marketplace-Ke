@@ -2,6 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <script>
+  (function() {
+    const t = localStorage.getItem("theme");
+    if (t) document.documentElement.setAttribute("data-theme", t);
+  })();
+</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SellAnythingKE — Buy & Sell in Kenya</title>
   <link rel="stylesheet" href="/css/style.css" />
@@ -78,6 +84,7 @@
       position: absolute; top: 100%; left: 0; right: 0;
       background: #fff; border-radius: 0 0 var(--radius) var(--radius);
       box-shadow: var(--shadow-lg); z-index: 300; overflow: hidden;
+      margin-top: 0;
     }
     .hero-suggest-item {
       display: flex; align-items: center; gap: 12px;
@@ -95,6 +102,44 @@
     .hero-suggest-thumb img { width: 100%; height: 100%; object-fit: cover; }
     .hero-suggest-title { font-size: 13px; font-weight: 500; color: var(--text); }
     .hero-suggest-price { font-size: 12px; color: var(--brand); font-weight: 600; }
+    .search-history-wrap { position: relative; max-width: 540px; margin: 20px auto 0; }
+    .search-history-dropdown {
+      position: absolute; top: 100%; left: 0; right: 0;
+      background: #fff; border-radius: 0 0 var(--radius) var(--radius);
+      box-shadow: 0 8px 24px rgba(0,0,0,.15); z-index: 300; overflow: hidden;
+      border: 1px solid var(--border); border-top: none;
+      margin-top: 0;
+    }
+    .history-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 14px; border-bottom: 1px solid var(--border);
+      font-size: 11px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .history-clear {
+      color: var(--brand); cursor: pointer; font-size: 11px;
+      font-weight: 600; background: none; border: none; padding: 0;
+    }
+    .history-clear:hover { text-decoration: underline; }
+    .history-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 14px; cursor: pointer; transition: background .15s;
+      font-size: 14px; gap: 10px; color: var(--text);
+    }
+    .history-item:hover { background: #fff0e6; }
+    .history-item .history-left {
+      display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0;
+    }
+    .history-item .history-text {
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      color: var(--text);
+    }
+    .history-remove {
+      background: none; border: none; cursor: pointer;
+      color: var(--muted); font-size: 16px; padding: 0 4px;
+      line-height: 1; flex-shrink: 0;
+    }
+    .history-remove:hover { color: #dc2626; }
   </style>
 </head>
 <body>
@@ -106,18 +151,20 @@
   </div>
 </nav>
 
-<div class="hero">
+<div class="hero" style="overflow:visible;padding-bottom:60px">
   <h1>SellAnythingKE</h1>
   <p>Buy and sell anything — electronics, clothes, vehicles &amp; more</p>
-  <<div class="hero-search-wrap">
+  <div style="position:relative;max-width:540px;margin:20px auto 0">
     <form class="hero-search" onsubmit="heroSearch(event)" style="margin-top:0;max-width:100%">
       <input id="hero-q" type="text" placeholder="What are you looking for?"
              oninput="fetchHeroSuggestions()"
-             onblur="setTimeout(hideHeroSuggestions, 200)"
+             onfocus="showSearchHistory()"
+             onblur="setTimeout(hideAllDropdowns, 200)"
              autocomplete="off" />
       <button type="submit">Find it →</button>
     </form>
     <div id="hero-suggestions" class="hero-suggestions" style="display:none"></div>
+    <div id="search-history-dropdown" class="search-history-dropdown" style="display:none"></div>
   </div>
 </div>
 
@@ -297,10 +344,16 @@
     const img   = l.images?.length
       ? `<img src="${l.images[0]}" alt="${l.title}" loading="lazy" />`
       : `<span>${l.category_icon || "📦"}</span>`;
-    const badge = l.condition === "new" ? "badge-new" : "badge-used";
+    const badge     = l.condition === "new" ? "badge-new" : "badge-used";
+    const isPromoted = l.is_promoted &&
+      (!l.promoted_until || new Date(l.promoted_until) > new Date());
     return `
-      <div class="listing-card" onclick="window.location='/listing.html?id=${l.id}'">
-        <div class="card-img">${img}</div>
+      <div class="listing-card ${isPromoted ? 'is-promoted' : ''}"
+           onclick="window.location='/listing.html?id=${l.id}'">
+        <div class="card-img">
+          ${img}
+          ${isPromoted ? `<div class="promoted-badge">⭐ Featured</div>` : ""}
+        </div>
         <div class="card-body">
           <div class="card-price">${formatPrice(l.price)}</div>
           <div class="card-title">${l.title}</div>
@@ -336,13 +389,18 @@
     e.preventDefault();
     const q = document.getElementById("hero-q").value.trim();
     if (!q) return;
+
     currentSearch = q;
     const titleEl = document.getElementById("section-title");
     if (titleEl) titleEl.textContent = `Results for "${q}"`;
     currentPage = 1;
     loadListings();
     loadPeople(q);
+    hideAllDropdowns();
     document.querySelector(".container.page-body").scrollIntoView({ behavior: "smooth" });
+
+    // Save to history if logged in
+    if (isLoggedIn()) api.saveSearch(q).catch(() => {});
   }
 
   // ── People ────────────────────────────────────────────────────────────────
@@ -411,9 +469,15 @@
   async function fetchHeroSuggestions() {
     const val = document.getElementById("hero-q").value.trim();
     clearTimeout(heroSuggestTimer);
-    const box = document.getElementById("hero-suggestions");
+    const box     = document.getElementById("hero-suggestions");
+    const history = document.getElementById("search-history-dropdown");
 
-    if (val.length < 2) { box.style.display = "none"; return; }
+    if (val.length < 2) {
+      box.style.display = "none";
+      if (val.length === 0) showSearchHistory();
+      return;
+    }
+    if (history) history.style.display = "none";
 
     heroSuggestTimer = setTimeout(async () => {
       try {
@@ -467,16 +531,79 @@
     }, 250);
   }
 
+  async function showSearchHistory() {
+    if (!isLoggedIn()) return;
+    const val = document.getElementById("hero-q").value.trim();
+    if (val.length > 0) return; // Don't show history if already typing
+
+    const dropdown = document.getElementById("search-history-dropdown");
+    try {
+      const history = await api.getSearchHistory();
+      if (!history.length) return;
+
+      dropdown.innerHTML = `
+        <div class="history-header">
+          <span>Recent Searches</span>
+          <button class="history-clear" onmousedown="clearAllHistory()">Clear all</button>
+        </div>
+        ${history.map(h => `
+          <div class="history-item">
+            <div class="history-left" onmousedown="selectHistory('${h.query}')">
+              <span style="color:var(--muted)">🕐</span>
+              <span class="history-text">${h.query}</span>
+            </div>
+            <button class="history-remove"
+                    onmousedown="removeHistoryItem('${h.query}', event)">×</button>
+          </div>`).join("")}`;
+
+      dropdown.style.display = "block";
+    } catch {}
+  }
+
+  function selectHistory(query) {
+    document.getElementById("hero-q").value = query;
+    hideAllDropdowns();
+    currentSearch = query;
+    const titleEl = document.getElementById("section-title");
+    if (titleEl) titleEl.textContent = `Results for "${query}"`;
+    currentPage = 1;
+    loadListings();
+    loadPeople(query);
+    document.querySelector(".container.page-body").scrollIntoView({ behavior: "smooth" });
+    if (isLoggedIn()) api.saveSearch(query).catch(() => {});
+  }
+
+  async function clearAllHistory() {
+    try {
+      await api.clearSearchHistory();
+      document.getElementById("search-history-dropdown").style.display = "none";
+      toast("Search history cleared", "success");
+    } catch {}
+  }
+
+  async function removeHistoryItem(query, e) {
+    e.stopPropagation();
+    try {
+      await api.removeSearchItem(query);
+      await showSearchHistory();
+    } catch {}
+  }
+
   function selectHeroSuggestion(val) {
     document.getElementById("hero-q").value = val;
     hideHeroSuggestions();
     heroSearch({ preventDefault: () => {} });
   }
 
-  function hideHeroSuggestions() {
-    const box = document.getElementById("hero-suggestions");
-    if (box) box.style.display = "none";
+  function hideAllDropdowns() {
+    const s = document.getElementById("hero-suggestions");
+    const h = document.getElementById("search-history-dropdown");
+    if (s) s.style.display = "none";
+    if (h) h.style.display = "none";
   }
+
+  // Keep old name as alias
+  function hideHeroSuggestions() { hideAllDropdowns(); }
   
 </script>
 <footer class="footer">

@@ -2,6 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <script>
+  (function() {
+    const t = localStorage.getItem("theme");
+    if (t) document.documentElement.setAttribute("data-theme", t);
+  })();
+</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Profile — SellAnythingKE</title>
   <link rel="stylesheet" href="/css/style.css" />
@@ -139,8 +145,9 @@
         <button class="btn btn-ghost" style="color:#dc2626;border-color:#dc2626;font-size:12px"
                 onclick="showUserReportModal()">🚩 Report User</button>
       </div>` : "";
-    const ownBadge = isOwnProfile
-      ? `<span style="background:#fff0e6;color:var(--brand);padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600">Your Profile</span>` : "";
+    const ownBadge  = isOwnProfile
+      ? `<span style="background:#fff0e6;color:var(--brand);padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600">Your Profile</span>
+         <a href="/my-listings.html" class="btn btn-ghost" style="font-size:13px;padding:6px 14px;margin-left:8px">📋 My Listings</a>` : "";
 
     const avatarHtml = avatar
       ? `<div class="profile-avatar" style="padding:0;overflow:hidden">

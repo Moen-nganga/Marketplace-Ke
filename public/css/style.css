@@ -252,6 +252,20 @@ h1,h2,h3,h4 { font-family: 'Bebas Neue', sans-serif; font-weight: 400; line-heig
   transition: all .18s; background: var(--surface);
   font-size: 14px; font-weight: 500;
 }
+/* ── Promoted listing ─────────────────────────────────────────────────────────── */
+.promoted-badge {
+  position: absolute; top: 8px; right: 8px;
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
+  color: #fff; font-size: 10px; font-weight: 700;
+  padding: 3px 8px; border-radius: 20px;
+  letter-spacing: 0.5px; text-transform: uppercase;
+  box-shadow: 0 2px 8px rgba(239,68,68,.4);
+}
+.listing-card { position: relative; }
+.listing-card.is-promoted {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 1px #f59e0b, var(--shadow);
+}
 .share-option:hover { border-color: var(--brand); background: #fff0e6; color: var(--brand); }
 .share-option .share-icon { font-size: 22px; width: 36px; text-align: center; }
 .share-option .share-label { flex: 1; }
@@ -263,3 +277,78 @@ h1,h2,h3,h4 { font-family: 'Bebas Neue', sans-serif; font-weight: 400; line-heig
 .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
 @keyframes fadeIn  { from { opacity: 0; } }
 @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } }
+
+/* ── Dark mode ───────────────────────────────────────────────────────────────── */
+[data-theme="dark"] {
+  --brand:      #e02020;
+  --brand-dark: #dd2c2c;
+  --bg:         #0f0f0f;
+  --surface:    #1a1a1a;
+  --border:     #2a2a2a;
+  --text:       #f0f0f0;
+  --muted:      #888888;
+  --success:    #2d9e6b;
+  --shadow:     0 2px 12px rgba(0,0,0,.4);
+  --shadow-lg:  0 8px 32px rgba(0,0,0,.6);
+}
+
+[data-theme="dark"] body { background: var(--bg); color: var(--text); }
+[data-theme="dark"] .navbar { background: #111; border-bottom-color: var(--border); }
+[data-theme="dark"] .hero { background: linear-gradient(135deg, #1a0000 0%, #3d0000 100%); }
+[data-theme="dark"] .hero-search { background: #1a1a1a; box-shadow: 0 4px 20px rgba(0,0,0,.5); }
+[data-theme="dark"] .hero-search input { color: var(--text); background: transparent; }
+[data-theme="dark"] .cat-chip { background: #1a1a1a; border-color: #2a2a2a; color: var(--text); }
+[data-theme="dark"] .cat-chip:hover, [data-theme="dark"] .cat-chip.active { background: #2a0000; }
+[data-theme="dark"] .listing-card { background: #1a1a1a; border-color: #2a2a2a; }
+[data-theme="dark"] .card-img { background: #111; }
+[data-theme="dark"] .form-card { background: #1a1a1a; border-color: #2a2a2a; }
+[data-theme="dark"] .form-group input,
+[data-theme="dark"] .form-group select,
+[data-theme="dark"] .form-group textarea { background: #111; border-color: #2a2a2a; color: var(--text); }
+[data-theme="dark"] .form-group input:focus,
+[data-theme="dark"] .form-group select:focus,
+[data-theme="dark"] .form-group textarea:focus { background: #1a1a1a; border-color: var(--brand); }
+[data-theme="dark"] .filters-bar select,
+[data-theme="dark"] .filters-bar input { background: #1a1a1a; border-color: #2a2a2a; color: var(--text); }
+[data-theme="dark"] .seller-card { background: #1a1a1a; border-color: #2a2a2a; }
+[data-theme="dark"] .gallery { background: #1a1a1a; border-color: #2a2a2a; }
+[data-theme="dark"] .gallery-main { background: #111; }
+[data-theme="dark"] .modal { background: #1a1a1a; border: 1px solid #2a2a2a; }
+[data-theme="dark"] .modal-overlay { background: rgba(0,0,0,.8); }
+[data-theme="dark"] .subcategory-dropdown { background: #1a1a1a; border-color: #2a2a2a; }
+[data-theme="dark"] .subcategory-dropdown a { background: #111; border-color: #2a2a2a; color: var(--text); }
+[data-theme="dark"] .subcategory-dropdown::after { border-bottom-color: #1a1a1a; }
+[data-theme="dark"] .nav-search { background: #1a1a1a; border-color: #2a2a2a; }
+[data-theme="dark"] .nav-search input { color: var(--text); }
+[data-theme="dark"] .rate-box { background: #111; border-color: #2a2a2a; }
+[data-theme="dark"] .rating-card { background: #111; }
+[data-theme="dark"] .conv-item { background: #1a1a1a; border-color: #2a2a2a; }
+[data-theme="dark"] .conv-item:hover { border-color: var(--brand); }
+[data-theme="dark"] .msg-row.theirs .msg-bubble { background: #1a1a1a; border-color: #2a2a2a; color: var(--text); }
+[data-theme="dark"] .messages-area { background: #0f0f0f; }
+[data-theme="dark"] .chat-header { background: #1a1a1a; border-color: #2a2a2a; }
+[data-theme="dark"] .chat-input-area { background: #1a1a1a; border-color: #2a2a2a; }
+[data-theme="dark"] .chat-input-area textarea { background: #111; border-color: #2a2a2a; color: var(--text); }
+[data-theme="dark"] .listing-bar { background: #1a1a1a; border-color: #2a2a2a; }
+[data-theme="dark"] .footer { background: #0a0a0a; }
+[data-theme="dark"] .footer-bottom { border-color: #1a1a1a; }
+[data-theme="dark"] .skeleton { background: linear-gradient(90deg, #1a1a1a 25%, #222 50%, #1a1a1a 75%); background-size: 200% 100%; }
+[data-theme="dark"] .hero-suggestions,
+[data-theme="dark"] .search-history-dropdown { background: #1a1a1a; border-color: #2a2a2a; }
+[data-theme="dark"] .history-item:hover { background: #2a1500; }
+[data-theme="dark"] .suggestion-item:hover { background: #2a1500; }
+[data-theme="dark"] .hero-suggest-item:hover { background: #2a1500; }
+[data-theme="dark"] .tag-pill { background: #2a1500; border-color: #5a2d00; }
+[data-theme="dark"] .tag-suggestion { background: #1a1a1a; border-color: #2a2a2a; color: var(--text); }
+[data-theme="dark"] .my-listing-card { background: #1a1a1a; border-color: #2a2a2a; }
+[data-theme="dark"] .share-option { background: #1a1a1a; border-color: #2a2a2a; color: var(--text); }
+[data-theme="dark"] .share-option:hover { background: #2a1500; }
+[data-theme="dark"] #notif-panel { background: #1a1a1a; border-color: #2a2a2a; }
+[data-theme="dark"] .warning-box { background: #1a0a00; border-color: var(--brand); }
+[data-theme="dark"] .highlight-box { background: #1a0a00; border-color: var(--brand); }
+[data-theme="dark"] .policy-section h2 { border-color: #2a2a2a; }
+[data-theme="dark"] .tip-card { background: #1a1a1a; border-color: #2a2a2a; }
+[data-theme="dark"] .tip-icon { background: #2a1500; }
+[data-theme="dark"] .feature-card { background: #1a1a1a; border-color: #2a2a2a; }
+[data-theme="dark"] .stat-card { background: #1a1a1a; border-color: #2a2a2a; }
+[data-theme="dark"] select option { background: #1a1a1a; color: var(--text); }

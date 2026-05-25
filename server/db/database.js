@@ -153,6 +153,31 @@ try {
   // already exists
 }
 
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS search_history (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id    INTEGER NOT NULL,
+      query      TEXT    NOT NULL,
+      created_at TEXT    DEFAULT (datetime('now')),
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    );
+  `);
+  console.log("✅ Search history table ready");
+} catch {
+  // already exists
+}
+
+try {
+  db.exec(`ALTER TABLE listings ADD COLUMN is_promoted INTEGER DEFAULT 0`);
+  console.log("✅ Migrated: added is_promoted to listings");
+} catch {}
+
+try {
+  db.exec(`ALTER TABLE listings ADD COLUMN promoted_until TEXT`);
+  console.log("✅ Migrated: added promoted_until to listings");
+} catch {}
+
 // ── FTS5 full-text search index ───────────────────────────────────────────────
 try {
   db.exec(`

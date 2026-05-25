@@ -55,6 +55,12 @@ const api = {
   getMessages:     (convId)       => apiFetch(`/messages/${convId}`),
   sendMessage:     (convId, body) => apiFetch(`/messages/${convId}`, { method: "POST", body: JSON.stringify(body) }),
   getUnreadCount:  ()             => apiFetch("/messages/unread/count"),
+  getRelatedListings: (id)        => apiFetch(`/listings/${id}/related`),
+  promoteListing:   (id)          => apiFetch(`/listings/${id}/promote`, { method: "POST" }),
+  saveSearch:       (query)       => apiFetch("/search/history", { method: "POST", body: JSON.stringify({ query }) }),
+  getSearchHistory: ()            => apiFetch("/search/history"),
+  clearSearchHistory: ()          => apiFetch("/search/history", { method: "DELETE" }),
+  removeSearchItem: (query)       => apiFetch(`/search/history/${encodeURIComponent(query)}`, { method: "DELETE" }),
   markAsRead:      (convId)       => apiFetch(`/messages/${convId}/read`, { method: "POST" }),
   getNotifications: ()            => apiFetch("/notifications"),
   markNotifsRead:   ()            => apiFetch("/notifications/read", { method: "POST" }),
@@ -127,12 +133,15 @@ function renderStars(score, interactive = false, onRate = null) {
   }).join("");
 }
 function updateNav() {
+  initDarkMode();
   const user    = getUser();
   const navAuth = document.getElementById("nav-auth");
   if (!navAuth) return;
   if (user) {
     navAuth.innerHTML = `
       <a href="/post-ad.html" class="btn btn-primary">+ Post Ad</a>
+      <button id="dark-mode-btn" class="btn btn-ghost" style="padding:9px 14px;font-size:16px"
+              onclick="toggleDarkMode()" title="Toggle dark mode">🌙</button>
       <div class="notif-wrap">
         <a href="/inbox.html" class="btn btn-ghost" style="padding:9px 14px" id="inbox-btn">💬</a>
       </div>
@@ -156,6 +165,8 @@ function updateNav() {
     loadNotifBadge();
   } else {
     navAuth.innerHTML = `
+      <button id="dark-mode-btn" class="btn btn-ghost" style="padding:9px 14px;font-size:16px"
+              onclick="toggleDarkMode()" title="Toggle dark mode">🌙</button>
       <a href="/login.html" class="btn btn-ghost">Login</a>
       <a href="/register.html" class="btn btn-primary">Register</a>`;
   }
@@ -288,4 +299,27 @@ async function toggleNotifPanel() {
       }
     });
   }, 100);
+}
+
+// ── Dark mode ─────────────────────────────────────────────────────────────────
+function initDarkMode() {
+  const saved = localStorage.getItem("theme") || "light";
+  document.documentElement.setAttribute("data-theme", saved);
+  updateDarkModeBtn();
+}
+
+function toggleDarkMode() {
+  const current = document.documentElement.getAttribute("data-theme");
+  const next    = current === "dark" ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", next);
+  localStorage.setItem("theme", next);
+  updateDarkModeBtn();
+}
+
+function updateDarkModeBtn() {
+  const btn = document.getElementById("dark-mode-btn");
+  if (!btn) return;
+  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+  btn.textContent  = isDark ? "☀️" : "🌙";
+  btn.title        = isDark ? "Switch to light mode" : "Switch to dark mode";
 }

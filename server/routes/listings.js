@@ -252,7 +252,9 @@ router.get("/", optionalAuth, (req, res) => {
     price_desc: "l.price DESC",
     popular:    "l.views DESC",
   };
-  const order    = orderMap[sort] || orderMap.newest;
+  const baseOrder = orderMap[sort] || orderMap.newest;
+  // Promoted listings always appear first, then normal order
+  const order = `CASE WHEN l.is_promoted = 1 AND (l.promoted_until IS NULL OR l.promoted_until > datetime('now')) THEN 0 ELSE 1 END, ${baseOrder}`;
   const whereSQL = where.length ? `WHERE ${where.join(" AND ")}` : "";
 
   const total = db.prepare(`
@@ -280,6 +282,29 @@ router.get("/", optionalAuth, (req, res) => {
 
 // ── GET /api/listings/user/:userId ────────────────────────────────────────────
 router.get("/user/:userId", (req, res) => {
+  const listings = db
+    .prepare(`
+      SELECT l.*, c.name AS category_name, c.icon AS category_icon
+      FROM   listings l
+      JOIN   categories c ON c.id = l.category_id
+      WHERE  l.user_id = ? AND l.status != 'deleted'
+      ORDER  BY l.created_at DESC
+    `)
+    .all(req.params.userId)
+    .map(row => ({
+      ...row,
+      images: JSON.parse(row.images || "[]"),
+      tags:   JSON.parse(row.tags   || "[]"),
+    }));
+
+  res.json(listings);
+});
+
+// ── GET /api/listings/user/:userId/all — all listings including sold ──────────
+router.get("/user/:userId/all", requireAuth, (req, res) => {
+  if (parseInt(req.params.userId) !== req.user.id)
+    return res.status(403).json({ error: "Forbidden" });
+
   const listings = db
     .prepare(`
       SELECT l.*, c.name AS category_name, c.icon AS category_icon
@@ -504,6 +529,81 @@ router.delete("/:id", requireAuth, (req, res) => {
 
   db.prepare("UPDATE listings SET status = 'deleted' WHERE id = ?").run(listing.id);
   res.json({ success: true });
+});
+
+// ── GET /api/listings/:id/related — similar listings ─────────────────────────
+router.get("/:id/related", (req, res) => {
+  const listing = db.prepare("SELECT * FROM listings WHERE id = ?").get(req.params.id);
+  if (!listing) return res.json([]);
+
+  const tags = JSON.parse(listing.tags || "[]");
+
+  // Try to find listings in same category with matching tags first
+  let related = [];
+
+  if (tags.length) {
+    const tagConditions = tags.map(() => "l.tags LIKE ?").join(" OR ");
+    const tagParams     = tags.map(t => `%${t}%`);
+
+    related = db.prepare(`
+      SELECT l.*, u.name AS seller_name,
+             c.name AS category_name, c.icon AS category_icon
+      FROM   listings l
+      JOIN   users      u ON u.id = l.user_id
+      JOIN   categories c ON c.id = l.category_id
+      WHERE  l.id != ?
+      AND    l.status = 'active'
+      AND    (l.category_id = ? OR ${tagConditions})
+      ORDER  BY l.created_at DESC
+      LIMIT  6
+    `).all(listing.id, listing.category_id, ...tagParams)
+      .map(row => ({
+        ...row,
+        images: JSON.parse(row.images || "[]"),
+        tags:   JSON.parse(row.tags   || "[]"),
+      }));
+  }
+
+  // Fallback — just same category
+  if (related.length < 3) {
+    related = db.prepare(`
+      SELECT l.*, u.name AS seller_name,
+             c.name AS category_name, c.icon AS category_icon
+      FROM   listings l
+      JOIN   users      u ON u.id = l.user_id
+      JOIN   categories c ON c.id = l.category_id
+      WHERE  l.id != ?
+      AND    l.status = 'active'
+      AND    l.category_id = ?
+      ORDER  BY l.created_at DESC
+      LIMIT  6
+    `).all(listing.id, listing.category_id)
+      .map(row => ({
+        ...row,
+        images: JSON.parse(row.images || "[]"),
+        tags:   JSON.parse(row.tags   || "[]"),
+      }));
+  }
+
+  res.json(related);
+});
+
+// ── POST /api/listings/:id/promote — promote a listing ───────────────────────
+router.post("/:id/promote", requireAuth, (req, res) => {
+  const listing = db.prepare("SELECT * FROM listings WHERE id = ?").get(req.params.id);
+
+  if (!listing)                        return res.status(404).json({ error: "Not found" });
+  if (listing.user_id !== req.user.id) return res.status(403).json({ error: "Forbidden" });
+  if (listing.status !== "active")     return res.status(400).json({ error: "Only active listings can be promoted" });
+
+  // Promote for 7 days
+  const until = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+  db.prepare(`
+    UPDATE listings SET is_promoted = 1, promoted_until = ? WHERE id = ?
+  `).run(until, listing.id);
+
+  res.json({ success: true, promoted_until: until });
 });
 
 module.exports = router;
