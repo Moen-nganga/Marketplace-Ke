@@ -235,29 +235,29 @@ if (count === 0) {
   const insertChild  = db.prepare("INSERT INTO categories (name, icon, parent_id) VALUES (?, ?, ?)");
 
   const parents = [
-    ["Phones",           "📱"],
-    ["Electronics",      "💻"],
-    ["Vehicles",         "🚗"],
-    ["Fashion",          "👗"],
-    ["Home & Garden",    "🏠"],
-    ["Sports & Leisure", "⚽"],
-    ["Jobs",             "💼"],
-    ["Kids & Baby",      "🍼"],
-    ["Animals & Pets",   "🐾"],
-    ["Services",         "🔧"],
+    ["Phones",           "smartphone"],
+    ["Electronics",      "laptop"],
+    ["Vehicles",         "car"],
+    ["Fashion",          "shirt"],
+    ["Home & Garden",    "home"],
+    ["Sports & Leisure", "trophy"],
+    ["Jobs",             "briefcase"],
+    ["Kids & Baby",      "baby"],
+    ["Animals & Pets",   "paw-print"],
+    ["Services",         "wrench"],
   ];
 
   const children = {
-    "Phones":           [["Mobile Phones","📱"],["Accessories","🎧"],["Smart Watches","⌚"],["Tablets","📟"],["Headphones","🎧"]],
-    "Electronics":      [["Laptops","💻"],["Desktops","🖥️"],["Cameras","📷"],["Gaming","🎮"],["TVs","📺"]],
-    "Vehicles":         [["Cars","🚗"],["Motorcycles","🏍️"],["Trucks","🚛"],["Spare Parts","🔩"],["Boats","⛵"]],
-    "Fashion":          [["Men's Clothing","👔"],["Women's Clothing","👗"],["Shoes","👟"],["Bags","👜"],["Watches","⌚"]],
-    "Home & Garden":    [["Furniture","🛋️"],["Kitchen","🍳"],["Garden","🌿"],["Appliances","🏠"],["Bedding","🛏️"]],
-    "Sports & Leisure": [["Exercise Equipment","🏋️"],["Outdoor","🏕️"],["Team Sports","⚽"],["Water Sports","🏄"],["Cycling","🚴"]],
-    "Jobs":             [["Full Time","💼"],["Part Time","⏰"],["Freelance","💻"],["Internships","🎓"],["Remote","🌍"]],
-    "Kids & Baby":      [["Clothes","👶"],["Toys","🧸"],["Feeding","🍼"],["Strollers","🛺"],["Safety","🔒"]],
-    "Animals & Pets":   [["Dogs","🐕"],["Cats","🐈"],["Birds","🦜"],["Fish","🐠"],["Pet Supplies","🦴"]],
-    "Services":         [["Cleaning","🧹"],["Repairs","🔧"],["Tutoring","📚"],["Beauty","💄"],["Moving","📦"]],
+    "Phones":           [["Mobile Phones","smartphone"],["Accessories","headphones"],["Smart Watches","watch"],["Tablets","tablet"],["Headphones","headphones"]],
+    "Electronics":      [["Laptops","laptop"],["Desktops","monitor"],["Cameras","camera"],["Gaming","gamepad-2"],["TVs","tv"]],
+    "Vehicles":         [["Cars","car"],["Motorcycles","bike"],["Trucks","truck"],["Spare Parts","settings"],["Boats","anchor"]],
+    "Fashion":          [["Men's Clothing","shirt"],["Women's Clothing","shirt"],["Shoes","footprints"],["Bags","shopping-bag"],["Watches","watch"]],
+    "Home & Garden":    [["Furniture","sofa"],["Kitchen","utensils"],["Garden","flower-2"],["Appliances","plug"],["Bedding","bed"]],
+    "Sports & Leisure": [["Exercise Equipment","dumbbell"],["Outdoor","tent"],["Team Sports","trophy"],["Water Sports","waves"],["Cycling","bike"]],
+    "Jobs":             [["Full Time","briefcase"],["Part Time","clock"],["Freelance","laptop"],["Internships","graduation-cap"],["Remote","globe"]],
+    "Kids & Baby":      [["Clothes","shirt"],["Toys","gamepad-2"],["Feeding","baby"],["Strollers","baby"],["Safety","shield"]],
+    "Animals & Pets":   [["Dogs","dog"],["Cats","cat"],["Birds","bird"],["Fish","fish"],["Pet Supplies","bone"]],
+    "Services":         [["Cleaning","sparkles"],["Repairs","wrench"],["Tutoring","book-open"],["Beauty","scissors"],["Moving","package"]],
   };
 
   parents.forEach(([name, icon]) => {
@@ -267,7 +267,7 @@ if (count === 0) {
     });
   });
 
-  console.log("✅ Categories seeded with subcategories");
+  console.log("✅ Categories seeded with Lucide icons");
 }
 
 module.exports = db;

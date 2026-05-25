@@ -292,6 +292,24 @@ h1,h2,h3,h4 { font-family: 'Bebas Neue', sans-serif; font-weight: 400; line-heig
   --shadow-lg:  0 8px 32px rgba(0,0,0,.6);
 }
 
+.cat-chip .icon {
+  width: 44px; height: 44px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  background: #f8f8f8; transition: background .18s;
+}
+.cat-chip:hover .icon, .cat-chip.active .icon {
+  background: #fff0e6;
+}
+[data-theme="dark"] .cat-chip .icon { background: #222; }
+[data-theme="dark"] .cat-chip:hover .icon,
+[data-theme="dark"] .cat-chip.active .icon { background: #2a0000; }
+
+.cat-chip .icon svg { transition: stroke .18s; }
+.cat-chip:hover .icon svg,
+.cat-chip.active .icon svg { stroke: var(--brand); }
+.subcategory-dropdown a svg { stroke: var(--muted); }
+.subcategory-dropdown a:hover svg { stroke: var(--brand); }
+
 [data-theme="dark"] body { background: var(--bg); color: var(--text); }
 [data-theme="dark"] .navbar { background: #111; border-bottom-color: var(--border); }
 [data-theme="dark"] .hero { background: linear-gradient(135deg, #1a0000 0%, #3d0000 100%); }

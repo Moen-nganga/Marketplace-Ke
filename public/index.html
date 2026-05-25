@@ -261,19 +261,21 @@
 
       bar.innerHTML =
         `<div class="cat-chip active" onclick="filterCategory(null, null, this)">
-           <span class="icon">🏠</span><span class="label">All</span>
+           <span class="icon" style="color:#e02020">${lucideIcon("home", 22)}</span>
+           <span class="label">All</span>
          </div>` +
         cats.map((c, i) => `
           <div class="cat-chip-wrap">
             <div class="cat-chip" onclick="filterCategory(${c.id}, ${i}, this)">
-              <span class="icon">${c.icon}</span>
+              <span class="icon" style="color:${catColor(c.name)}">${lucideIcon(c.icon, 22)}</span>
               <span class="label">${c.name}</span>
             </div>
             ${c.children && c.children.length ? `
             <div class="subcategory-dropdown">
               ${c.children.map(child => `
                 <a href="javascript:void(0)" onclick="selectSubcategory(${child.id}, '${child.name}')">
-                  <span>${child.icon}</span>${child.name}
+                  <span style="display:inline-flex;align-items:center">${lucideIcon(child.icon, 16)}</span>
+                  ${child.name}
                 </a>`).join("")}
             </div>` : ""}
           </div>`).join("");
@@ -605,6 +607,22 @@
   // Keep old name as alias
   function hideHeroSuggestions() { hideAllDropdowns(); }
   
+  function catColor(name) {
+    const colors = {
+      "Phones":           "#3b82f6", // blue
+      "Electronics":      "#8b5cf6", // purple
+      "Vehicles":         "#ef4444", // red
+      "Fashion":          "#ec4899", // pink
+      "Home & Garden":    "#10b981", // green
+      "Sports & Leisure": "#f59e0b", // amber
+      "Jobs":             "#6366f1", // indigo
+      "Kids & Baby":      "#f97316", // orange
+      "Animals & Pets":   "#14b8a6", // teal
+      "Services":         "#64748b", // slate
+    };
+    return colors[name] || "var(--brand)";
+  }
+
 </script>
 <footer class="footer">
   <div class="footer-inner">
