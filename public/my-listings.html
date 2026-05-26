@@ -181,10 +181,8 @@
     if (!filtered.length) {
       el.innerHTML = `
         <div class="empty-state">
-          <div class="icon">${currentTab === "sold" ? "🏷️" : "📭"}</div>
-          <h3>${currentTab === "sold" ? "No sold listings yet" : "No listings yet"}</h3>
-          <p>${currentTab === "sold" ? "Items you sell will appear here" : "Start selling by posting your first ad"}</p>
-          ${currentTab !== "sold" ? `<a href="/post-ad.html" class="btn btn-primary" style="margin-top:16px">+ Post an Ad</a>` : ""}
+          <div class="icon">📭</div>
+          <h3>No listings posted</h3>
         </div>`;
       return;
     }
