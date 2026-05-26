@@ -216,6 +216,18 @@
   <div id="listings-grid" class="listings-grid"></div>
   <div id="pagination" style="display:flex;gap:10px;justify-content:center;margin-top:32px;"></div>
 
+  <!-- Recently viewed -->
+  <div id="recently-viewed-section" style="display:none;margin-top:48px">
+    <div class="section-header">
+      <h2>Recently Viewed</h2>
+      <button onclick="clearRecentlyViewed()"
+              style="font-size:13px;color:var(--muted);background:none;border:none;cursor:pointer">
+        Clear
+      </button>
+    </div>
+    <div id="recently-viewed-grid" class="listings-grid"></div>
+  </div>
+
 </main>
 
 <div class="toast-container" id="toast-container"></div>
@@ -230,6 +242,7 @@
   window.addEventListener("DOMContentLoaded", async () => {
     updateNav();
     await loadCategories();
+    await Promise.all([loadListings(), loadRecentlyViewed()]);
 
     // Check if a category was requested via URL e.g. /?cat=Phones
     const urlParams = new URLSearchParams(location.search);
@@ -337,6 +350,7 @@
       }
       grid.innerHTML = listings.map(listingCard).join("");
       renderPagination(pages);
+      loadSavedIds();
     } catch (e) {
       grid.innerHTML = `<p style="color:red;grid-column:1/-1">${e.message}</p>`;
     }
@@ -623,6 +637,95 @@
     return colors[name] || "var(--brand)";
   }
 
+// ── Saved listings ────────────────────────────────────────────────────────
+  const savedIds = new Set();
+
+  async function loadSavedIds() {
+    if (!isLoggedIn()) return;
+    try {
+      const listings = await api.getSaved();
+      listings.forEach(l => savedIds.add(l.id));
+      updateHeartButtons();
+    } catch {}
+  }
+
+  function updateHeartButtons() {
+    savedIds.forEach(id => {
+      const btn = document.getElementById(`heart-${id}`);
+      if (btn) {
+        btn.classList.add("saved");
+        btn.querySelector(".heart-icon").textContent = "♥";
+      }
+    });
+  }
+
+  async function toggleSave(listingId) {
+    if (!isLoggedIn()) { window.location.href = "/login.html"; return; }
+    const btn      = document.getElementById(`heart-${listingId}`);
+    const isSaved  = savedIds.has(listingId);
+
+    try {
+      if (isSaved) {
+        await api.unsaveListing(listingId);
+        savedIds.delete(listingId);
+        if (btn) {
+          btn.classList.remove("saved");
+          btn.querySelector(".heart-icon").textContent = "♡";
+        }
+        toast("Removed from favourites", "success");
+      } else {
+        await api.saveListing(listingId);
+        savedIds.add(listingId);
+        if (btn) {
+          btn.classList.add("saved");
+          btn.querySelector(".heart-icon").textContent = "♥";
+        }
+        toast("Saved to favourites ♥", "success");
+      }
+    } catch (e) { toast(e.message, "error"); }
+  }
+
+// ── Recently viewed ───────────────────────────────────────────────────────
+  async function loadRecentlyViewed() {
+    if (!isLoggedIn()) return;
+    try {
+      const listings = await api.getRecentlyViewed();
+      if (!listings.length) return;
+
+      document.getElementById("recently-viewed-section").style.display = "";
+      document.getElementById("recently-viewed-grid").innerHTML =
+        listings.map(l => {
+          const img   = l.images?.length
+            ? `<img src="${l.images[0]}" alt="${l.title}" loading="lazy" />`
+            : `<span>${l.category_icon || "📦"}</span>`;
+          const badge = l.condition === "new" ? "badge-new" : "badge-used";
+          return `
+            <div class="listing-card" onclick="window.location='/listing.html?id=${l.id}'">
+              <div class="card-img">${img}</div>
+              <div class="card-body">
+                <div class="card-price">${formatPrice(l.price)}</div>
+                <div class="card-title">${l.title}</div>
+                <div class="card-meta">
+                  <span class="badge ${badge}">${conditionLabel(l.condition)}</span>
+                  <span>📍 ${l.location}</span>
+                </div>
+                <div class="card-meta" style="margin-top:4px">
+                  <span>👁 Viewed ${timeAgo(l.viewed_at)}</span>
+                </div>
+              </div>
+            </div>`;
+        }).join("");
+    } catch {}
+  }
+
+  async function clearRecentlyViewed() {
+    try {
+      await api.clearRecentlyViewed();
+      document.getElementById("recently-viewed-section").style.display = "none";
+      toast("Recently viewed cleared", "success");
+    } catch {}
+  }
+  
 </script>
 <footer class="footer">
   <div class="footer-inner">

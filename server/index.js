@@ -20,6 +20,8 @@ app.use("/api/ratings",  require("./routes/ratings"));
 app.use("/api/reports",  require("./routes/reports"));
 app.use("/api/notifications", require("./routes/notifications"));
 app.use("/api/search", require("./routes/search"));
+app.use("/api/saved",  require("./routes/saved"));
+app.use("/api/recently-viewed", require("./routes/recently-viewed"));
 app.use("/api/messages", require("./routes/messages"));
 app.use("/api/categories", (req, res) => {
   const db      = require("./db/database");

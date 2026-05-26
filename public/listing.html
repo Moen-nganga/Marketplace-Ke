@@ -103,7 +103,19 @@
       <div class="listing-detail">
         <div class="gallery">${gallery}</div>
         <div>
-          <h1 style="font-size:22px;line-height:1.3;margin-bottom:8px">${l.title}</h1>
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:8px">
+            <h1 style="font-size:22px;line-height:1.3">${l.title}</h1>
+            ${!isOwner && isLoggedIn() ? `
+            <button id="detail-heart-btn" onclick="toggleDetailSave()"
+                    style="flex-shrink:0;width:40px;height:40px;border-radius:50%;
+                           background:var(--bg);border:1.5px solid var(--border);
+                           cursor:pointer;font-size:20px;display:flex;align-items:center;
+                           justify-content:center;transition:all .18s"
+                    onmouseover="this.style.borderColor='#ef4444'"
+                    onmouseout="this.style.borderColor=isSavedListing?'#ef4444':'var(--border)'">
+              ♡
+            </button>` : ""}
+          </div>
           <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;font-weight:800;color:var(--brand);margin-bottom:14px">
             ${formatPrice(l.price)}
           </div>
@@ -261,6 +273,8 @@
       const l = await api.getListing(id);
       document.title = `${l.title} — SellAnythingKE`;
       render(l);
+      // Record this view if logged in
+      if (isLoggedIn()) api.recordView(id).catch(() => {});
     } catch (e) {
       document.getElementById("listing-content").innerHTML =
         `<div class="empty-state"><div class="icon">😕</div><h3>Listing not found</h3><p>${e.message}</p></div>`;
@@ -277,6 +291,9 @@
         reportBtn.textContent = `⚠️ Check Reports (${count})`;
       }
     } catch {}
+
+    // Check if saved
+    checkIfSaved();
 
     // Related listings
     try {
@@ -564,6 +581,43 @@ async function promoteListng() {
       toast(e.message, "error");
       btn.disabled = false; btn.textContent = "⭐ Promote for Free";
     }
+  }
+
+let isSavedListing = false;
+
+  async function checkIfSaved() {
+    if (!getUser() || !l) return;
+    if (l.user_id === getUser().id) return;
+    try {
+      const { saved } = await api.checkSaved(id);
+      isSavedListing = saved;
+      updateDetailHeart();
+    } catch {}
+  }
+
+  function updateDetailHeart() {
+    const btn = document.getElementById("detail-heart-btn");
+    if (!btn) return;
+    btn.textContent       = isSavedListing ? "♥" : "♡";
+    btn.style.color       = isSavedListing ? "#ef4444" : "var(--muted)";
+    btn.style.borderColor = isSavedListing ? "#ef4444" : "var(--border)";
+    btn.style.background  = isSavedListing ? "#fee2e2" : "var(--bg)";
+  }
+
+  async function toggleDetailSave() {
+    if (!getUser()) { window.location.href = "/login.html"; return; }
+    try {
+      if (isSavedListing) {
+        await api.unsaveListing(id);
+        isSavedListing = false;
+        toast("Removed from favourites", "success");
+      } else {
+        await api.saveListing(id);
+        isSavedListing = true;
+        toast("Saved to favourites ♥", "success");
+      }
+      updateDetailHeart();
+    } catch (e) { toast(e.message, "error"); }
   }
 
 </script>

@@ -111,6 +111,13 @@ const api = {
   getRelatedListings: (id)        => apiFetch(`/listings/${id}/related`),
   promoteListing:   (id)          => apiFetch(`/listings/${id}/promote`, { method: "POST" }),
   saveSearch:       (query)       => apiFetch("/search/history", { method: "POST", body: JSON.stringify({ query }) }),
+  getSaved:         ()            => apiFetch("/saved"),
+  saveListing:      (id)          => apiFetch(`/saved/${id}`, { method: "POST" }),
+  unsaveListing:    (id)          => apiFetch(`/saved/${id}`, { method: "DELETE" }),
+  checkSaved:       (id)          => apiFetch(`/saved/check/${id}`),
+  recordView:       (id)          => apiFetch(`/recently-viewed/${id}`, { method: "POST" }),
+  getRecentlyViewed: ()           => apiFetch("/recently-viewed"),
+  clearRecentlyViewed: ()         => apiFetch("/recently-viewed", { method: "DELETE" }),
   getSearchHistory: ()            => apiFetch("/search/history"),
   clearSearchHistory: ()          => apiFetch("/search/history", { method: "DELETE" }),
   removeSearchItem: (query)       => apiFetch(`/search/history/${encodeURIComponent(query)}`, { method: "DELETE" }),
@@ -195,6 +202,7 @@ function updateNav() {
       <a href="/post-ad.html" class="btn btn-primary">+ Post Ad</a>
       <button id="dark-mode-btn" class="btn btn-ghost" style="padding:9px 14px;font-size:16px"
               onclick="toggleDarkMode()" title="Toggle dark mode">🌙</button>
+      <a href="/favourites.html" class="btn btn-ghost" style="padding:9px 14px;font-size:16px" title="My Favourites">♡</a>
       <div class="notif-wrap">
         <a href="/inbox.html" class="btn btn-ghost" style="padding:9px 14px" id="inbox-btn">💬</a>
       </div>

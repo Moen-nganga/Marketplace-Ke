@@ -178,6 +178,21 @@ try {
   console.log("✅ Migrated: added promoted_until to listings");
 } catch {}
 
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS recently_viewed (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id    INTEGER NOT NULL,
+      listing_id INTEGER NOT NULL,
+      viewed_at  TEXT    DEFAULT (datetime('now')),
+      UNIQUE(user_id, listing_id),
+      FOREIGN KEY (user_id)    REFERENCES users(id),
+      FOREIGN KEY (listing_id) REFERENCES listings(id)
+    );
+  `);
+  console.log("✅ Recently viewed table ready");
+} catch {}
+
 // ── FTS5 full-text search index ───────────────────────────────────────────────
 try {
   db.exec(`

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Favourites — SellAnythingKE</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <script>(function(){const t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)})();</script>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="nav-inner">
+    <a href="/" class="nav-logo">SellAnythingKE</a>
+    <div id="nav-auth"></div>
+  </div>
+</nav>
+
+<div class="container page-body" style="max-width:1100px">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:12px">
+    <div>
+      <h1 style="margin-bottom:4px">♥ My Favourites</h1>
+      <p style="color:var(--muted);font-size:14px">Listings you've saved for later</p>
+    </div>
+    <a href="/" class="btn btn-ghost">← Browse More</a>
+  </div>
+
+  <div id="favourites-grid" class="listings-grid"></div>
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+<script src="/js/api.js"></script>
+<script>
+  window.addEventListener("DOMContentLoaded", async () => {
+    if (!isLoggedIn()) { window.location.href = "/login.html"; return; }
+    updateNav();
+    await loadFavourites();
+  });
+
+  async function loadFavourites() {
+    const grid = document.getElementById("favourites-grid");
+    grid.innerHTML = skeletonCards(6);
+
+    try {
+      const listings = await api.getSaved();
+
+      if (!listings.length) {
+        grid.innerHTML = `
+          <div class="empty-state" style="grid-column:1/-1">
+            <div class="icon">♡</div>
+            <h3>No favourites yet</h3>
+            <p>Tap the heart on any listing to save it here</p>
+            <a href="/" class="btn btn-primary" style="margin-top:16px">Browse Listings</a>
+          </div>`;
+        return;
+      }
+
+      grid.innerHTML = listings.map(l => {
+        const img   = l.images?.length
+          ? `<img src="${l.images[0]}" alt="${l.title}" loading="lazy" />`
+          : `<span>${l.category_icon || "📦"}</span>`;
+        const badge = l.condition === "new" ? "badge-new" : (l.status === "sold" ? "badge-sold" : "badge-used");
+
+        return `
+          <div class="listing-card" style="position:relative">
+            <div class="card-img" onclick="window.location='/listing.html?id=${l.id}'" style="cursor:pointer">
+              ${img}
+              ${l.status === "sold" ? `<div style="position:absolute;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center">
+                <span style="background:#ef4444;color:#fff;padding:6px 16px;border-radius:20px;font-weight:700;font-size:13px">SOLD</span>
+              </div>` : ""}
+            </div>
+            <div class="card-body">
+              <div class="card-price" onclick="window.location='/listing.html?id=${l.id}'" style="cursor:pointer">${formatPrice(l.price)}</div>
+              <div class="card-title" onclick="window.location='/listing.html?id=${l.id}'" style="cursor:pointer">${l.title}</div>
+              <div class="card-meta">
+                <span class="badge ${badge}">${l.status === "sold" ? "Sold" : conditionLabel(l.condition)}</span>
+                <span>📍 ${l.location}</span>
+              </div>
+              <div class="card-meta" style="margin-top:4px;justify-content:space-between">
+                <span>${timeAgo(l.created_at)}</span>
+                <button onclick="unsave(${l.id}, this)"
+                        style="background:none;border:none;cursor:pointer;color:#ef4444;font-size:18px"
+                        title="Remove from favourites">♥</button>
+              </div>
+            </div>
+          </div>`;
+      }).join("");
+    } catch (e) {
+      grid.innerHTML = `<p style="color:red;grid-column:1/-1">${e.message}</p>`;
+    }
+  }
+
+  async function unsave(id, btn) {
+    try {
+      await api.unsaveListing(id);
+      toast("Removed from favourites", "success");
+      btn.closest(".listing-card").style.opacity = "0";
+      btn.closest(".listing-card").style.transition = "opacity .3s";
+      setTimeout(loadFavourites, 350);
+    } catch (e) { toast(e.message, "error"); }
+  }
+
+  function skeletonCards(n) {
+    return Array.from({length: n}, () => `
+      <div class="listing-card">
+        <div class="card-img skeleton" style="aspect-ratio:4/3"></div>
+        <div class="card-body">
+          <div class="skeleton" style="height:18px;width:60%;margin-bottom:8px"></div>
+          <div class="skeleton" style="height:14px;width:85%;margin-bottom:6px"></div>
+          <div class="skeleton" style="height:12px;width:45%"></div>
+        </div>
+      </div>`).join("");
+  }
+</script>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="logo">SellAnythingKE</div>
+        <p>Kenya's free online marketplace. Buy and sell anything — electronics, vehicles, fashion, and more.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Quick Links</h4>
+        <a href="/">Home</a>
+        <a href="/post-ad.html">Post an Ad</a>
+        <a href="/login.html">Login</a>
+        <a href="/register.html">Register</a>
+      </div>
+      <div class="footer-col">
+        <h4>Categories</h4>
+        <a href="/?cat=Phones">Phones</a>
+        <a href="/?cat=Electronics">Electronics</a>
+        <a href="/?cat=Vehicles">Vehicles</a>
+        <a href="/?cat=Fashion">Fashion</a>
+        <a href="/?cat=Home%20%26%20Garden">Home & Garden</a>
+        <a href="/?cat=Sports%20%26%20Leisure">Sports & Leisure</a>
+        <a href="/?cat=Jobs">Jobs</a>
+        <a href="/?cat=Kids%20%26%20Baby">Kids & Baby</a>
+        <a href="/?cat=Animals%20%26%20Pets">Animals & Pets</a>
+        <a href="/?cat=Services">Services</a>
+      </div>
+      <div class="footer-col">
+        <h4>Help</h4>
+        <a href="/safety-tips.html">Safety Tips</a>
+        <a href="/how-it-works.html">How it Works</a>
+        <a href="#">Contact Us</a>
+        <a href="/privacy-policy.html">Privacy Policy</a>
+        <a href="/terms.html">Terms of Use</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2026 SellAnythingKE. All rights reserved.</p>
+      <div class="footer-socials">
+        <a href="#" title="Facebook">f</a>
+        <a href="#" title="Twitter">𝕏</a>
+        <a href="#" title="Instagram">📷</a>
+        <a href="#" title="WhatsApp">💬</a>
+      </div>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

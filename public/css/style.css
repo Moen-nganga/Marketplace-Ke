@@ -310,6 +310,8 @@ h1,h2,h3,h4 { font-family: 'Bebas Neue', sans-serif; font-weight: 400; line-heig
 .subcategory-dropdown a svg { stroke: var(--muted); }
 .subcategory-dropdown a:hover svg { stroke: var(--brand); }
 
+
+
 [data-theme="dark"] body { background: var(--bg); color: var(--text); }
 [data-theme="dark"] .navbar { background: #111; border-bottom-color: var(--border); }
 [data-theme="dark"] .hero { background: linear-gradient(135deg, #1a0000 0%, #3d0000 100%); }
