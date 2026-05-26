@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Notifications — SellAnythingKE</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <script>(function(){const t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)})();</script>
+  <style>
+    .notif-list { display: flex; flex-direction: column; gap: 10px; }
+    .notif-item {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 16px 20px;
+      display: flex; align-items: flex-start; gap: 16px;
+      cursor: pointer; transition: all .18s;
+    }
+    .notif-item:hover { border-color: var(--brand); transform: translateX(3px); }
+    .notif-item.unread { background: #fff8f0; border-left: 3px solid var(--brand); }
+    [data-theme="dark"] .notif-item.unread { background: #1a0a00; }
+    .notif-icon-wrap {
+      width: 46px; height: 46px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; flex-shrink: 0;
+    }
+    .notif-icon-wrap.view   { background: #eff6ff; }
+    .notif-icon-wrap.rating { background: #fefce8; }
+    .notif-icon-wrap.message { background: #f0fdf4; }
+    [data-theme="dark"] .notif-icon-wrap.view    { background: #0f1a2a; }
+    [data-theme="dark"] .notif-icon-wrap.rating  { background: #1a1800; }
+    [data-theme="dark"] .notif-icon-wrap.message { background: #001a0a; }
+    .notif-body { flex: 1; min-width: 0; }
+    .notif-body .message { font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
+    .notif-body .time    { font-size: 12px; color: var(--muted); }
+    .unread-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--brand); flex-shrink: 0; margin-top: 6px;
+    }
+    .notif-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 24px; flex-wrap: wrap; gap: 12px;
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="nav-inner">
+    <a href="/" class="nav-logo">SellAnythingKE</a>
+    <div id="nav-auth"></div>
+  </div>
+</nav>
+
+<div class="container page-body" style="max-width:700px">
+  <div class="notif-header">
+    <div>
+      <h1 style="margin-bottom:4px">Notifications</h1>
+      <p style="color:var(--muted);font-size:14px">Stay up to date with your activity</p>
+    </div>
+    <button class="btn btn-ghost" onclick="markAllRead()" id="mark-read-btn">
+      ✓ Mark all as read
+    </button>
+  </div>
+
+  <div id="notif-list"></div>
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+<script src="/js/api.js"></script>
+<script>
+  const icons = {
+    view:    { emoji: "👁", class: "view" },
+    rating:  { emoji: "⭐", class: "rating" },
+    message: { emoji: "💬", class: "message" },
+  };
+
+  window.addEventListener("DOMContentLoaded", async () => {
+    if (!isLoggedIn()) { window.location.href = "/login.html"; return; }
+    updateNav();
+    await loadNotifications();
+  });
+
+  async function loadNotifications() {
+    const el = document.getElementById("notif-list");
+    el.innerHTML = skeletonList(5);
+
+    try {
+      const { notifications } = await api.getNotifications();
+
+      if (!notifications.length) {
+        el.innerHTML = `
+          <div class="empty-state">
+            <div class="icon">🔔</div>
+            <h3>No notifications yet</h3>
+            <p>We'll let you know when something happens</p>
+          </div>`;
+        document.getElementById("mark-read-btn").style.display = "none";
+        return;
+      }
+
+      const hasUnread = notifications.some(n => !n.is_read);
+      document.getElementById("mark-read-btn").style.display = hasUnread ? "" : "none";
+
+      el.innerHTML = `<div class="notif-list">
+        ${notifications.map(n => {
+          const icon = icons[n.type] || { emoji: "🔔", class: "view" };
+          return `
+            <div class="notif-item ${n.is_read ? "" : "unread"}"
+                 onclick="${n.link ? `window.location='${n.link}'` : ""}">
+              <div class="notif-icon-wrap ${icon.class}">${icon.emoji}</div>
+              <div class="notif-body">
+                <div class="message">${n.message}</div>
+                <div class="time">${timeAgo(n.created_at)}</div>
+              </div>
+              ${!n.is_read ? `<div class="unread-dot"></div>` : ""}
+            </div>`;
+        }).join("")}
+      </div>`;
+    } catch (e) {
+      el.innerHTML = `<p style="color:red">${e.message}</p>`;
+    }
+  }
+
+  async function markAllRead() {
+    try {
+      await api.markNotifsRead();
+      toast("All notifications marked as read", "success");
+      await loadNotifications();
+    } catch (e) { toast(e.message, "error"); }
+  }
+
+  function skeletonList(n) {
+    return Array.from({length: n}, () => `
+      <div class="notif-item" style="pointer-events:none">
+        <div class="skeleton" style="width:46px;height:46px;border-radius:50%;flex-shrink:0"></div>
+        <div style="flex:1">
+          <div class="skeleton" style="height:15px;width:70%;margin-bottom:8px"></div>
+          <div class="skeleton" style="height:12px;width:30%"></div>
+        </div>
+      </div>`).join("");
+  }
+</script>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="logo">SellAnythingKE</div>
+        <p>Kenya's free online marketplace. Buy and sell anything — electronics, vehicles, fashion, and more.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Quick Links</h4>
+        <a href="/">Home</a>
+        <a href="/post-ad.html">Post an Ad</a>
+        <a href="/login.html">Login</a>
+        <a href="/register.html">Register</a>
+      </div>
+      <div class="footer-col">
+        <h4>Categories</h4>
+        <a href="/?cat=Phones">Phones</a>
+        <a href="/?cat=Electronics">Electronics</a>
+        <a href="/?cat=Vehicles">Vehicles</a>
+        <a href="/?cat=Fashion">Fashion</a>
+        <a href="/?cat=Home%20%26%20Garden">Home & Garden</a>
+        <a href="/?cat=Sports%20%26%20Leisure">Sports & Leisure</a>
+        <a href="/?cat=Jobs">Jobs</a>
+        <a href="/?cat=Kids%20%26%20Baby">Kids & Baby</a>
+        <a href="/?cat=Animals%20%26%20Pets">Animals & Pets</a>
+        <a href="/?cat=Services">Services</a>
+      </div>
+      <div class="footer-col">
+        <h4>Help</h4>
+        <a href="/safety-tips.html">Safety Tips</a>
+        <a href="/how-it-works.html">How it Works</a>
+        <a href="#">Contact Us</a>
+        <a href="/privacy-policy.html">Privacy Policy</a>
+        <a href="/terms.html">Terms of Use</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2026 SellAnythingKE. All rights reserved.</p>
+      <div class="footer-socials">
+        <a href="#" title="Facebook">f</a>
+        <a href="#" title="Twitter">𝕏</a>
+        <a href="#" title="Instagram">📷</a>
+        <a href="#" title="WhatsApp">💬</a>
+      </div>
+    </div>
+  </div>
+</footer>
+</body>
+</html>
