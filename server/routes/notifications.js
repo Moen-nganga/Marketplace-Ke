@@ -4,7 +4,7 @@ const { requireAuth } = require("../middleware/auth");
 
 const router = express.Router();
 
-// ── GET /api/notifications — get all notifications for logged in user ─────────
+// ── GET /api/notifications ────────────────────────────────────────────────────
 router.get("/", requireAuth, (req, res) => {
   const notifications = db.prepare(`
     SELECT * FROM notifications
@@ -30,12 +30,29 @@ router.post("/read", requireAuth, (req, res) => {
   res.json({ success: true });
 });
 
+// ── DELETE /api/notifications/:id — delete one ───────────────────────────────
+router.delete("/:id", requireAuth, (req, res) => {
+  const notif = db.prepare(
+    "SELECT * FROM notifications WHERE id = ? AND user_id = ?"
+  ).get(req.params.id, req.user.id);
+
+  if (!notif) return res.status(404).json({ error: "Not found" });
+
+  db.prepare("DELETE FROM notifications WHERE id = ?").run(req.params.id);
+  res.json({ success: true });
+});
+
+// ── DELETE /api/notifications — delete all ────────────────────────────────────
+router.delete("/", requireAuth, (req, res) => {
+  db.prepare("DELETE FROM notifications WHERE user_id = ?").run(req.user.id);
+  res.json({ success: true });
+});
+
 module.exports = router;
 
-// ── Helper to create a notification (used by other routes) ────────────────────
+// ── Helper ────────────────────────────────────────────────────────────────────
 function createNotification(user_id, type, message, link) {
   try {
-    // Don't create duplicate notifications within 1 hour
     const recent = db.prepare(`
       SELECT id FROM notifications
       WHERE user_id = ? AND type = ? AND message = ?

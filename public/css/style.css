@@ -154,6 +154,16 @@ h1,h2,h3,h4 { font-family: 'Bebas Neue', sans-serif; font-weight: 400; line-heig
   pointer-events: none;
 }
 
+/* ── Back button ─────────────────────────────────────────────────────────────── */
+.back-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  color: var(--brand); font-size: 14px; font-weight: 500;
+  background: none; border: none; cursor: pointer;
+  padding: 0; margin-bottom: 20px;
+  transition: gap .18s;
+}
+.back-btn:hover { gap: 10px; }
+
 /* ── Dashboard Sidebar ───────────────────────────────────────────────────────── */
 .dashboard-overlay {
   display: none;
