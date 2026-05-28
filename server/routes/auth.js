@@ -3,6 +3,14 @@ const bcrypt   = require("bcryptjs");
 const jwt      = require("jsonwebtoken");
 const db       = require("../db/database");
 
+const { google } = require("googleapis");
+
+const oauth2Client = new google.auth.OAuth2(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  process.env.GOOGLE_REDIRECT_URI
+);
+
 const router = express.Router();
 
 router.post("/register", async (req, res) => {
@@ -111,6 +119,66 @@ router.post("/avatar", require("../middleware/auth").requireAuth, avatarUpload.s
   db.prepare("UPDATE users SET avatar = ? WHERE id = ?").run(avatarUrl, req.user.id);
 
   res.json({ avatar: avatarUrl });
+});
+
+// ── GET /api/auth/google — redirect to Google login ──────────────────────────
+router.get("/google", (req, res) => {
+  const url = oauth2Client.generateAuthUrl({
+    access_type: "offline",
+    scope: ["profile", "email"],
+    prompt: "select_account",
+  });
+  res.redirect(url);
+});
+
+// ── GET /api/auth/google/callback — handle Google response ───────────────────
+router.get("/google/callback", async (req, res) => {
+  const { code } = req.query;
+
+  if (!code) return res.redirect("/login.html?error=cancelled");
+
+  try {
+    // Exchange code for tokens
+    const { tokens } = await oauth2Client.getToken(code);
+    oauth2Client.setCredentials(tokens);
+
+    // Get user info from Google
+    const oauth2 = google.oauth2({ version: "v2", auth: oauth2Client });
+    const { data } = await oauth2.userinfo.get();
+
+    const { email, name, picture, id: googleId } = data;
+
+    // Check if user already exists
+    let user = db.prepare("SELECT * FROM users WHERE email = ?").get(email);
+
+    if (!user) {
+      // Create new user — no password since they use Google
+      const result = db.prepare(`
+        INSERT INTO users (name, email, password, avatar)
+        VALUES (?, ?, ?, ?)
+      `).run(name, email, "google_oauth_" + googleId, picture || null);
+
+      user = db.prepare("SELECT * FROM users WHERE id = ?").get(result.lastInsertRowid);
+    } else if (!user.avatar && picture) {
+      // Update avatar if they didn't have one
+      db.prepare("UPDATE users SET avatar = ? WHERE id = ?").run(picture, user.id);
+      user.avatar = picture;
+    }
+
+    // Issue JWT
+    const token = jwt.sign(
+      { id: user.id, name: user.name, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    // Redirect to frontend with token
+    res.redirect(`/login.html?token=${token}&name=${encodeURIComponent(user.name)}&email=${encodeURIComponent(user.email)}&id=${user.id}&avatar=${encodeURIComponent(user.avatar || "")}`);
+
+  } catch (e) {
+    console.error("Google OAuth error:", e.message);
+    res.redirect("/login.html?error=failed");
+  }
 });
 
 module.exports = router;
