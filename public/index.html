@@ -83,7 +83,7 @@
     .hero-suggestions {
       position: absolute; top: 100%; left: 0; right: 0;
       background: #fff; border-radius: 0 0 var(--radius) var(--radius);
-      box-shadow: var(--shadow-lg); z-index: 300; overflow: hidden;
+      box-shadow: var(--shadow-lg); z-index: 9999; overflow: hidden;
       margin-top: 0;
     }
     .hero-suggest-item {
@@ -106,7 +106,7 @@
     .search-history-dropdown {
       position: absolute; top: 100%; left: 0; right: 0;
       background: #fff; border-radius: 0 0 var(--radius) var(--radius);
-      box-shadow: 0 8px 24px rgba(0,0,0,.15); z-index: 300; overflow: hidden;
+      box-shadow: 0 8px 24px rgba(0,0,0,.15); z-index: 9999; overflow: hidden;
       border: 1px solid var(--border); border-top: none;
       margin-top: 0;
     }
@@ -151,11 +151,11 @@
   </div>
 </nav>
 
-<div class="hero" style="overflow:visible;padding-bottom:60px">
+<div class="hero" style="padding-bottom:40px;position:relative;z-index:500">
   <h1>SellAnythingKE</h1>
   <p>Buy and sell anything — electronics, clothes, vehicles &amp; more</p>
-  <div style="position:relative;max-width:540px;margin:20px auto 0">
-    <form class="hero-search" onsubmit="heroSearch(event)" style="margin-top:0;max-width:100%">
+  <div style="position:relative;max-width:600px;margin:20px auto 0;z-index:9999">
+    <form class="hero-search" onsubmit="heroSearch(event)" style="margin:0;max-width:100%">
       <input id="hero-q" type="text" placeholder="What are you looking for?"
              oninput="fetchHeroSuggestions()"
              onfocus="showSearchHistory()"
@@ -163,8 +163,8 @@
              autocomplete="off" />
       <button type="submit">Find it →</button>
     </form>
-    <div id="hero-suggestions" class="hero-suggestions" style="display:none"></div>
-    <div id="search-history-dropdown" class="search-history-dropdown" style="display:none"></div>
+    <div id="hero-suggestions" class="hero-suggestions" style="display:none;z-index:9999;position:absolute;left:0;right:0;top:100%"></div>
+    <div id="search-history-dropdown" class="search-history-dropdown" style="display:none;z-index:9999;position:absolute;left:0;right:0;top:100%"></div>
   </div>
 </div>
 
@@ -176,7 +176,7 @@
   </div>
 
   <!-- Space for subcategory dropdowns -->
-  <div style="height: 80px;"></div>
+  <div style="height: 140px;"></div>
 
   <!-- Section header -->
   <div class="section-header">
@@ -766,7 +766,7 @@
         <h4>Help</h4>
         <a href="/safety-tips.html">Safety Tips</a>
         <a href="/how-it-works.html">How it Works</a>
-        <a href="#">Contact Us</a>
+        <a href="https://mail.google.com/mail/?view=cm&fs=1&to=moenmburu41@gmail.com&su=SellAnythingKE%20Enquiry" target="_blank">Contact Us</a>
         <a href="/privacy-policy.html">Privacy Policy</a>
         <a href="/terms.html">Terms of Use</a>
       </div>
@@ -776,12 +776,7 @@
     <!-- Bottom bar -->
     <div class="footer-bottom">
       <p>© 2026 SellAnythingKE. All rights reserved.</p>
-      <div class="footer-socials">
-        <a href="#" title="Facebook">f</a>
-        <a href="#" title="Twitter">𝕏</a>
-        <a href="#" title="Instagram">📷</a>
-        <a href="#" title="WhatsApp">💬</a>
-      </div>
+      <div></div>
     </div>
   </div>
 </footer>

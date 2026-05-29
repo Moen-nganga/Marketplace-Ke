@@ -20,6 +20,7 @@ router.post("/history", requireAuth, (req, res) => {
     .run(req.user.id, q);
 
   // Keep only last 10 searches per user
+  // Keep only last 3 searches per user
   db.prepare(`
     DELETE FROM search_history
     WHERE user_id = ?
@@ -27,7 +28,7 @@ router.post("/history", requireAuth, (req, res) => {
       SELECT id FROM search_history
       WHERE user_id = ?
       ORDER BY created_at DESC
-      LIMIT 10
+      LIMIT 3
     )
   `).run(req.user.id, req.user.id);
 
@@ -40,7 +41,7 @@ router.get("/history", requireAuth, (req, res) => {
     SELECT query, created_at FROM search_history
     WHERE  user_id = ?
     ORDER  BY created_at DESC
-    LIMIT  10
+    LIMIT  3
   `).all(req.user.id);
 
   res.json(history);
