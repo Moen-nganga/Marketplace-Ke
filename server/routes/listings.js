@@ -1,14 +1,12 @@
+require("dotenv").config();
 const express  = require("express");
 const multer   = require("multer");
-const path     = require("path");
-const db       = require("../db/database");
-const { createNotification } = require("./notifications");
+const pool     = require("../db/postgres");
 const { requireAuth, optionalAuth } = require("../middleware/auth");
-
-const router = express.Router();
-
 const cloudinary             = require("cloudinary").v2;
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
+
+const router = express.Router();
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -19,9 +17,9 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
   cloudinary,
   params: {
-    folder:         "sellanythingke/listings",
+    folder:          "sellanythingke/listings",
     allowed_formats: ["jpg", "jpeg", "png", "webp"],
-    transformation: [{ width: 1200, height: 900, crop: "limit", quality: "auto" }],
+    transformation:  [{ width: 1200, height: 900, crop: "limit", quality: "auto" }],
   },
 });
 
@@ -36,115 +34,52 @@ const upload = multer({
 
 // ── Synonyms ──────────────────────────────────────────────────────────────────
 const synonyms = {
-  "mobile phone":   ["iphone", "samsung", "phone", "smartphone", "android", "huawei", "tecno", "infinix", "oppo", "vivo"],
-  "mobile phones":  ["iphone", "samsung", "phone", "smartphone", "android", "huawei", "tecno", "infinix", "oppo", "vivo"],
-  "phone":          ["iphone", "samsung", "smartphone", "android", "huawei", "tecno", "infinix", "oppo", "vivo"],
-  "phones":         ["iphone", "samsung", "smartphone", "android", "huawei", "tecno", "infinix", "oppo", "vivo"],
-  "smartphone":     ["iphone", "samsung", "android", "huawei", "tecno", "infinix", "oppo"],
-  "laptop":         ["macbook", "lenovo", "hp", "dell", "asus", "acer", "chromebook", "toshiba"],
-  "laptops":        ["macbook", "lenovo", "hp", "dell", "asus", "acer", "chromebook", "toshiba"],
-  "computer":       ["laptop", "macbook", "desktop", "pc", "lenovo", "hp", "dell"],
-  "computers":      ["laptop", "macbook", "desktop", "pc", "lenovo", "hp", "dell"],
-  "tv":             ["television", "samsung", "lg", "sony", "hisense", "tcl", "vitron"],
-  "tvs":            ["television", "samsung", "lg", "sony", "hisense", "tcl", "vitron"],
-  "television":     ["tv", "samsung", "lg", "sony", "hisense", "tcl"],
-  "fridge":         ["refrigerator", "samsung", "lg", "von", "ramtons", "hisense"],
-  "fridges":        ["refrigerator", "samsung", "lg", "von", "ramtons", "hisense"],
-  "refrigerator":   ["fridge", "samsung", "lg", "von", "ramtons"],
-  "washing machine":["washer", "samsung", "lg", "von", "ramtons", "hotpoint"],
-  "car":            ["vehicle", "toyota", "nissan", "honda", "subaru", "mazda", "mercedes", "bmw", "audi"],
-  "cars":           ["vehicle", "toyota", "nissan", "honda", "subaru", "mazda", "mercedes", "bmw"],
-  "vehicle":        ["car", "toyota", "nissan", "honda", "subaru", "mazda", "truck", "van"],
-  "vehicles":       ["car", "toyota", "nissan", "honda", "subaru", "mazda", "truck", "van"],
-  "bike":           ["motorcycle", "bajaj", "honda", "yamaha", "suzuki", "tvs", "boxer"],
-  "bikes":          ["motorcycles", "bajaj", "honda", "yamaha", "suzuki", "tvs"],
-  "motorcycle":     ["bike", "bajaj", "honda", "yamaha", "suzuki", "tvs", "boxer"],
-  "motorcycles":    ["bikes", "bajaj", "honda", "yamaha", "suzuki", "tvs"],
-  "shoe":           ["sneaker", "boot", "sandal", "nike", "adidas", "jordan", "puma", "vans"],
-  "shoes":          ["sneakers", "boots", "sandals", "nike", "adidas", "jordan", "puma"],
-  "sneaker":        ["shoe", "nike", "adidas", "jordan", "puma", "vans", "converse"],
-  "sneakers":       ["shoes", "nike", "adidas", "jordan", "puma", "vans", "converse"],
-  "watch":          ["smartwatch", "casio", "rolex", "samsung", "apple watch", "timepiece"],
-  "watches":        ["smartwatch", "casio", "rolex", "timepiece", "wristwatch"],
-  "smartwatch":     ["watch", "samsung", "apple watch", "fitbit", "garmin", "huawei"],
-  "headphone":      ["earphone", "earbuds", "airpods", "sony", "jbl", "bose", "sennheiser"],
-  "headphones":     ["earphones", "earbuds", "airpods", "sony", "jbl", "bose"],
-  "earphone":       ["headphone", "earbuds", "airpods", "sony", "jbl"],
-  "earphones":      ["headphones", "earbuds", "airpods", "sony", "jbl"],
-  "camera":         ["dslr", "canon", "nikon", "sony", "fujifilm", "gopro"],
-  "cameras":        ["dslr", "canon", "nikon", "sony", "fujifilm", "gopro"],
-  "tablet":         ["ipad", "samsung", "huawei", "lenovo", "android tablet"],
-  "tablets":        ["ipad", "samsung", "huawei", "lenovo", "android tablet"],
-  "sofa":           ["couch", "seat", "furniture", "settee"],
-  "bed":            ["mattress", "furniture", "bedframe", "divan"],
-  "mattress":       ["bed", "furniture", "spring", "foam"],
-  "clothing":       ["clothes", "fashion", "shirt", "dress", "trouser", "jeans"],
-  "clothes":        ["clothing", "fashion", "shirt", "dress", "trouser", "jeans"],
-  "dress":          ["clothing", "clothes", "fashion", "gown", "frock"],
-  "generator":      ["power", "genset", "kipor", "honda", "firman", "sumec"],
-  "solar":          ["panel", "inverter", "battery", "power", "energy"],
-  "dog":            ["puppy", "pet", "pup", "breed"],
-  "dogs":           ["puppies", "pets", "pups", "breeds"],
-  "cat":            ["kitten", "pet", "kitty"],
-  "cats":           ["kittens", "pets"],
+  "mobile phone":   ["iphone","samsung","phone","smartphone","android","huawei","tecno","infinix","oppo","vivo"],
+  "mobile phones":  ["iphone","samsung","phone","smartphone","android","huawei","tecno","infinix","oppo","vivo"],
+  "phone":          ["iphone","samsung","smartphone","android","huawei","tecno","infinix","oppo","vivo"],
+  "phones":         ["iphone","samsung","smartphone","android","huawei","tecno","infinix","oppo","vivo"],
+  "laptop":         ["macbook","lenovo","hp","dell","asus","acer","chromebook","toshiba"],
+  "laptops":        ["macbook","lenovo","hp","dell","asus","acer","chromebook","toshiba"],
+  "computer":       ["laptop","macbook","desktop","pc","lenovo","hp","dell"],
+  "tv":             ["television","samsung","lg","sony","hisense","tcl","vitron"],
+  "tvs":            ["television","samsung","lg","sony","hisense","tcl","vitron"],
+  "fridge":         ["refrigerator","samsung","lg","von","ramtons","hisense"],
+  "car":            ["vehicle","toyota","nissan","honda","subaru","mazda","mercedes","bmw","audi"],
+  "cars":           ["vehicle","toyota","nissan","honda","subaru","mazda","mercedes","bmw"],
+  "bike":           ["motorcycle","bajaj","honda","yamaha","suzuki","tvs","boxer"],
+  "motorcycle":     ["bike","bajaj","honda","yamaha","suzuki","tvs","boxer"],
+  "shoe":           ["sneaker","boot","sandal","nike","adidas","jordan","puma","vans"],
+  "shoes":          ["sneakers","boots","sandals","nike","adidas","jordan","puma"],
+  "watch":          ["smartwatch","casio","rolex","samsung","apple watch","timepiece"],
+  "watches":        ["smartwatch","casio","rolex","timepiece","wristwatch"],
+  "headphones":     ["earphones","earbuds","airpods","sony","jbl","bose"],
+  "camera":         ["dslr","canon","nikon","sony","fujifilm","gopro"],
+  "tablet":         ["ipad","samsung","huawei","lenovo","android tablet"],
+  "sofa":           ["couch","seat","furniture","settee"],
+  "dog":            ["puppy","pet","pup","breed"],
+  "cat":            ["kitten","pet","kitty"],
 };
 
 function expandQuery(q) {
   const lower   = q.toLowerCase().trim();
   const related = synonyms[lower] || [];
   const words   = lower.split(/\s+/);
-
-  const terms = [
-    ...words.map(w => `"${w}"*`),
-    ...related.map(r => `"${r}"*`),
-    // Also try each word with common typo variations
-    ...words.flatMap(w => typoVariants(w)).map(v => `"${v}"*`),
-  ];
-
-  return [...new Set(terms)].join(" OR ");
+  const terms   = [...words, ...related];
+  return [...new Set(terms)];
 }
 
-function typoVariants(word) {
-  if (word.length < 3) return [];
-  const variants = new Set();
-
-  // 1. Missing a letter — "iphon" matches "iphone"
-  for (let i = 0; i < word.length; i++) {
-    variants.add(word.slice(0, i) + word.slice(i + 1));
-  }
-
-  // 2. Swapped adjacent letters — "ipohne" matches "iphone"
-  for (let i = 0; i < word.length - 1; i++) {
-    const arr = word.split("");
-    [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
-    variants.add(arr.join(""));
-  }
-
-  // 3. Common double-letter mistakes — "samssung" matches "samsung"
-  for (let i = 0; i < word.length - 1; i++) {
-    if (word[i] === word[i + 1]) {
-      variants.add(word.slice(0, i) + word.slice(i + 1));
-    }
-  }
-
-  // 4. Prefix — first 4 chars minimum so "sams" finds "samsung"
-  if (word.length >= 4) {
-    variants.add(word.slice(0, Math.max(4, word.length - 2)));
-  }
-
-  // Remove the original word itself since it's already in the main terms
-  variants.delete(word);
-  return [...variants];
-}
-
-// ── Routes ────────────────────────────────────────────────────────────────────
-
-router.get("/categories", (req, res) => {
-  res.json(db.prepare("SELECT * FROM categories").all());
+// ── GET /api/categories ───────────────────────────────────────────────────────
+router.get("/categories", async (req, res) => {
+  const parents = await pool.query("SELECT * FROM categories WHERE parent_id IS NULL ORDER BY id");
+  const result  = await Promise.all(parents.rows.map(async p => {
+    const children = await pool.query("SELECT * FROM categories WHERE parent_id = $1 ORDER BY id", [p.id]);
+    return { ...p, children: children.rows };
+  }));
+  res.json(result);
 });
 
 // ── GET /api/listings ─────────────────────────────────────────────────────────
-router.get("/", optionalAuth, (req, res) => {
+router.get("/", optionalAuth, async (req, res) => {
   const {
     q, category_id, min_price, max_price, condition,
     location, sort = "newest", page = 1,
@@ -152,119 +87,43 @@ router.get("/", optionalAuth, (req, res) => {
 
   const PAGE_SIZE = 20;
   const offset    = (parseInt(page) - 1) * PAGE_SIZE;
+  const params    = [];
+  const where     = ["l.status = 'active'"];
 
-  // Use FTS5 when there's a search query
+  if (category_id) { params.push(category_id);    where.push(`l.category_id = $${params.length}`); }
+  if (min_price)   { params.push(min_price);       where.push(`l.price >= $${params.length}`); }
+  if (max_price)   { params.push(max_price);       where.push(`l.price <= $${params.length}`); }
+  if (condition)   { params.push(condition);       where.push(`l.condition = $${params.length}`); }
+  if (location)    { params.push(`%${location}%`); where.push(`l.location ILIKE $${params.length}`); }
+
   if (q && q.trim()) {
-    const searchTerm = expandQuery(q.trim());
-
-    let where  = ["l.status = 'active'"];
-    let params = [];
-
-    if (category_id) { where.push("l.category_id = ?"); params.push(category_id); }
-    if (min_price)   { where.push("l.price >= ?");       params.push(min_price); }
-    if (max_price)   { where.push("l.price <= ?");       params.push(max_price); }
-    if (condition)   { where.push("l.condition = ?");    params.push(condition); }
-    if (location)    { where.push("l.location LIKE ?");  params.push(`%${location}%`); }
-
-    const filterSQL = where.length ? `AND ${where.join(" AND ")}` : "";
-
-    try {
-      const listings = db.prepare(`
-        SELECT l.*, u.name AS seller_name, u.phone AS seller_phone,
-               c.name AS category_name, c.icon AS category_icon,
-               fts.rank
-        FROM   listings_fts fts
-        JOIN   listings     l ON l.id = fts.rowid
-        JOIN   users        u ON u.id = l.user_id
-        JOIN   categories   c ON c.id = l.category_id
-        WHERE  listings_fts MATCH ?
-        ${filterSQL}
-        ORDER  BY fts.rank
-        LIMIT  ? OFFSET ?
-      `).all(searchTerm, ...params, PAGE_SIZE, offset)
-        .map(row => ({
-          ...row,
-          images: JSON.parse(row.images || "[]"),
-          tags:   JSON.parse(row.tags   || "[]"),
-        }));
-
-      const total = db.prepare(`
-        SELECT COUNT(*) AS n
-        FROM   listings_fts fts
-        JOIN   listings l ON l.id = fts.rowid
-        WHERE  listings_fts MATCH ?
-        ${filterSQL}
-      `).get(searchTerm, ...params).n;
-
-      // If FTS returned nothing, try LIKE fallback with partial words
-      if (!listings.length) {
-        const likeResults = db.prepare(`
-          SELECT l.*, u.name AS seller_name, u.phone AS seller_phone,
-                 c.name AS category_name, c.icon AS category_icon
-          FROM   listings l
-          JOIN   users      u ON u.id = l.user_id
-          JOIN   categories c ON c.id = l.category_id
-          WHERE  l.status = 'active'
-          AND   (l.title LIKE ? OR l.description LIKE ? OR l.tags LIKE ?)
-          ${filterSQL.replace(/AND l\./g, "AND l.")}
-          ORDER  BY l.created_at DESC
-          LIMIT  ? OFFSET ?
-        `).all(
-          `%${q}%`, `%${q}%`, `%${q}%`,
-          ...params, PAGE_SIZE, offset
-        ).map(row => ({
-          ...row,
-          images: JSON.parse(row.images || "[]"),
-          tags:   JSON.parse(row.tags   || "[]"),
-        }));
-
-        return res.json({
-          listings: likeResults,
-          total:    likeResults.length,
-          page:     parseInt(page),
-          pages:    Math.ceil(likeResults.length / PAGE_SIZE),
-        });
-      }
-
-      return res.json({
-        listings,
-        total,
-        page:  parseInt(page),
-        pages: Math.ceil(total / PAGE_SIZE),
-      });
-    } catch {
-      // FTS failed — fall through to LIKE search
-    }
+    const terms = expandQuery(q.trim());
+    const orClauses = terms.map(term => {
+      params.push(`%${term}%`);
+      const n = params.length;
+      return `(l.title ILIKE $${n} OR l.description ILIKE $${n} OR l.tags::text ILIKE $${n})`;
+    });
+    where.push(`(${orClauses.join(" OR ")})`);
   }
 
-  // Normal browse / fallback LIKE search
-  let where  = ["l.status = 'active'"];
-  let params = [];
-
-  if (q)           { where.push("(l.title LIKE ? OR l.description LIKE ? OR l.tags LIKE ?)"); params.push(`%${q}%`, `%${q}%`, `%${q}%`); }
-  if (category_id) { where.push("l.category_id = ?"); params.push(category_id); }
-  if (min_price)   { where.push("l.price >= ?");       params.push(min_price); }
-  if (max_price)   { where.push("l.price <= ?");       params.push(max_price); }
-  if (condition)   { where.push("l.condition = ?");    params.push(condition); }
-  if (location)    { where.push("l.location LIKE ?");  params.push(`%${location}%`); }
+  const whereSQL = `WHERE ${where.join(" AND ")}`;
 
   const orderMap = {
-    newest:     "l.created_at DESC",
-    oldest:     "l.created_at ASC",
-    price_asc:  "l.price ASC",
-    price_desc: "l.price DESC",
-    popular:    "l.views DESC",
+    newest:     "l.is_promoted DESC, l.created_at DESC",
+    oldest:     "l.is_promoted DESC, l.created_at ASC",
+    price_asc:  "l.is_promoted DESC, l.price ASC",
+    price_desc: "l.is_promoted DESC, l.price DESC",
+    popular:    "l.is_promoted DESC, l.views DESC",
   };
-  const baseOrder = orderMap[sort] || orderMap.newest;
-  // Promoted listings always appear first, then normal order
-  const order = `CASE WHEN l.is_promoted = 1 AND (l.promoted_until IS NULL OR l.promoted_until > datetime('now')) THEN 0 ELSE 1 END, ${baseOrder}`;
-  const whereSQL = where.length ? `WHERE ${where.join(" AND ")}` : "";
+  const order = orderMap[sort] || orderMap.newest;
 
-  const total = db.prepare(`
-    SELECT COUNT(*) AS n FROM listings l ${whereSQL}
-  `).get(...params).n;
+  const countRes = await pool.query(
+    `SELECT COUNT(*) FROM listings l ${whereSQL}`, params
+  );
+  const total = parseInt(countRes.rows[0].count);
 
-  const listings = db.prepare(`
+  params.push(PAGE_SIZE, offset);
+  const listRes = await pool.query(`
     SELECT l.*, u.name AS seller_name, u.phone AS seller_phone,
            c.name AS category_name, c.icon AS category_icon
     FROM   listings l
@@ -272,96 +131,80 @@ router.get("/", optionalAuth, (req, res) => {
     JOIN   categories c ON c.id = l.category_id
     ${whereSQL}
     ORDER  BY ${order}
-    LIMIT  ? OFFSET ?
-  `).all(...params, PAGE_SIZE, offset)
-    .map(row => ({
-      ...row,
-      images: JSON.parse(row.images || "[]"),
-      tags:   JSON.parse(row.tags   || "[]"),
-    }));
+    LIMIT  $${params.length - 1} OFFSET $${params.length}
+  `, params);
 
-  res.json({ listings, total, page: parseInt(page), pages: Math.ceil(total / PAGE_SIZE) });
+  res.json({
+    listings: listRes.rows,
+    total,
+    page:  parseInt(page),
+    pages: Math.ceil(total / PAGE_SIZE),
+  });
 });
 
 // ── GET /api/listings/user/:userId ────────────────────────────────────────────
-router.get("/user/:userId", (req, res) => {
-  const listings = db
-    .prepare(`
-      SELECT l.*, c.name AS category_name, c.icon AS category_icon
-      FROM   listings l
-      JOIN   categories c ON c.id = l.category_id
-      WHERE  l.user_id = ? AND l.status != 'deleted'
-      ORDER  BY l.created_at DESC
-    `)
-    .all(req.params.userId)
-    .map(row => ({
-      ...row,
-      images: JSON.parse(row.images || "[]"),
-      tags:   JSON.parse(row.tags   || "[]"),
-    }));
-
-  res.json(listings);
+router.get("/user/:userId", async (req, res) => {
+  const result = await pool.query(`
+    SELECT l.*, c.name AS category_name, c.icon AS category_icon
+    FROM   listings l
+    JOIN   categories c ON c.id = l.category_id
+    WHERE  l.user_id = $1 AND l.status != 'deleted'
+    ORDER  BY l.created_at DESC
+  `, [req.params.userId]);
+  res.json(result.rows);
 });
 
-// ── GET /api/listings/user/:userId/all — all listings including sold ──────────
-router.get("/user/:userId/all", requireAuth, (req, res) => {
+// ── GET /api/listings/user/:userId/all ────────────────────────────────────────
+router.get("/user/:userId/all", requireAuth, async (req, res) => {
   if (parseInt(req.params.userId) !== req.user.id)
     return res.status(403).json({ error: "Forbidden" });
 
-  const listings = db
-    .prepare(`
-      SELECT l.*, c.name AS category_name, c.icon AS category_icon
-      FROM   listings l
-      JOIN   categories c ON c.id = l.category_id
-      WHERE  l.user_id = ? AND l.status != 'deleted'
-      ORDER  BY l.created_at DESC
-    `)
-    .all(req.params.userId)
-    .map(row => ({
-      ...row,
-      images: JSON.parse(row.images || "[]"),
-      tags:   JSON.parse(row.tags   || "[]"),
-    }));
-
-  res.json(listings);
+  const result = await pool.query(`
+    SELECT l.*, c.name AS category_name, c.icon AS category_icon
+    FROM   listings l
+    JOIN   categories c ON c.id = l.category_id
+    WHERE  l.user_id = $1 AND l.status != 'deleted'
+    ORDER  BY l.created_at DESC
+  `, [req.params.userId]);
+  res.json(result.rows);
 });
 
 // ── GET /api/listings/search/users ───────────────────────────────────────────
-router.get("/search/users", (req, res) => {
+router.get("/search/users", async (req, res) => {
   const { q } = req.query;
   if (!q) return res.json([]);
 
-  const users = db.prepare(`
-    SELECT
-      u.id, u.name, u.created_at,
-      COUNT(l.id) AS listing_count,
-      (SELECT ROUND(AVG(score), 1) FROM ratings WHERE rated_id = u.id) AS avg_rating,
-      (SELECT COUNT(*) FROM ratings WHERE rated_id = u.id) AS rating_count
-    FROM users u
+  const result = await pool.query(`
+    SELECT u.id, u.name, u.created_at,
+           COUNT(l.id) AS listing_count,
+           ROUND(AVG(r.score)::numeric, 1) AS avg_rating,
+           COUNT(r.id) AS rating_count
+    FROM   users u
     LEFT JOIN listings l ON l.user_id = u.id AND l.status = 'active'
-    WHERE u.name LIKE ?
-    GROUP BY u.id
-    ORDER BY listing_count DESC
-    LIMIT 10
-  `).all(`%${q}%`);
-
-  res.json(users);
+    LEFT JOIN ratings  r ON r.rated_id = u.id
+    WHERE  u.name ILIKE $1
+    GROUP  BY u.id
+    ORDER  BY listing_count DESC
+    LIMIT  10
+  `, [`%${q}%`]);
+  res.json(result.rows);
 });
 
 // ── GET /api/listings/tags/suggest ───────────────────────────────────────────
-router.get("/tags/suggest", (req, res) => {
+router.get("/tags/suggest", async (req, res) => {
   const { q } = req.query;
-  if (!q || q.length < 1) return res.json([]);
+  if (!q) return res.json([]);
 
-  const rows = db.prepare(`
+  const result = await pool.query(`
     SELECT tags FROM listings
-    WHERE tags != '[]' AND status = 'active'
-  `).all();
+    WHERE  status = 'active' AND tags != '[]'
+  `);
 
   const freq = {};
-  rows.forEach(row => {
+  result.rows.forEach(row => {
     try {
-      JSON.parse(row.tags).forEach(tag => {
+      const tags = Array.isArray(row.tags) ? row.tags : JSON.parse(row.tags || "[]");
+      tags.forEach(tag => {
         if (tag.toLowerCase().includes(q.toLowerCase())) {
           freq[tag] = (freq[tag] || 0) + 1;
         }
@@ -378,74 +221,82 @@ router.get("/tags/suggest", (req, res) => {
 });
 
 // ── GET /api/listings/suggest ─────────────────────────────────────────────────
-router.get("/suggest", (req, res) => {
+router.get("/suggest", async (req, res) => {
   const { q } = req.query;
   if (!q || q.length < 2) return res.json([]);
 
-  try {
-    const searchTerm = expandQuery(q.trim());
+  const terms   = expandQuery(q.trim());
+  const orParts = terms.map((t, i) => `title ILIKE $${i + 1}`);
+  const params  = terms.map(t => `%${t}%`);
 
-    const results = db.prepare(`
-      SELECT DISTINCT l.title, l.id, l.price, l.images
-      FROM   listings_fts fts
-      JOIN   listings l ON l.id = fts.rowid
-      WHERE  listings_fts MATCH ?
-      AND    l.status = 'active'
-      ORDER  BY fts.rank
-      LIMIT  6
-    `).all(searchTerm)
-      .map(r => ({
-        ...r,
-        images: JSON.parse(r.images || "[]"),
-      }));
+  const result = await pool.query(`
+    SELECT DISTINCT title, id, price, images
+    FROM   listings
+    WHERE  status = 'active' AND (${orParts.join(" OR ")})
+    LIMIT  6
+  `, params);
 
-    // If FTS found nothing, fall back to LIKE
-    if (!results.length) {
-      const fallback = db.prepare(`
-        SELECT DISTINCT title, id, price, images
-        FROM   listings
-        WHERE  (title LIKE ? OR description LIKE ?)
-        AND    status = 'active'
-        LIMIT  6
-      `).all(`%${q}%`, `%${q}%`)
-        .map(r => ({ ...r, images: JSON.parse(r.images || "[]") }));
-      return res.json(fallback);
-    }
-
-    res.json(results);
-  } catch {
-    const results = db.prepare(`
-      SELECT DISTINCT title, id, price, images
-      FROM   listings
-      WHERE  title LIKE ? AND status = 'active'
-      LIMIT  6
-    `).all(`%${q}%`)
-      .map(r => ({ ...r, images: JSON.parse(r.images || "[]") }));
-    res.json(results);
-  }
+  res.json(result.rows);
 });
 
-// ── GET /api/listings/:id ─────────────────────────────────────────────────────
-router.get("/:id", optionalAuth, (req, res) => {
-  const listing = db
-    .prepare(`
-      SELECT l.*, u.name AS seller_name, u.phone AS seller_phone,
-             u.created_at AS seller_since,
+// ── GET /api/listings/:id/related ─────────────────────────────────────────────
+router.get("/:id/related", async (req, res) => {
+  const listing = await pool.query("SELECT * FROM listings WHERE id = $1", [req.params.id]);
+  if (!listing.rows.length) return res.json([]);
+
+  const l    = listing.rows[0];
+  const tags = Array.isArray(l.tags) ? l.tags : JSON.parse(l.tags || "[]");
+
+  let result;
+  if (tags.length) {
+    const tagParams  = tags.map((t, i) => `$${i + 3}`);
+    const tagValues  = tags.map(t => `%${t}%`);
+    result = await pool.query(`
+      SELECT l.*, u.name AS seller_name,
              c.name AS category_name, c.icon AS category_icon
       FROM   listings l
       JOIN   users      u ON u.id = l.user_id
       JOIN   categories c ON c.id = l.category_id
-      WHERE  l.id = ? AND l.status != 'deleted'
-    `)
-    .get(req.params.id);
+      WHERE  l.id != $1 AND l.status = 'active'
+      AND    (l.category_id = $2 OR ${tagParams.map(p => `l.tags::text ILIKE ${p}`).join(" OR ")})
+      ORDER  BY l.created_at DESC
+      LIMIT  6
+    `, [req.params.id, l.category_id, ...tagValues]);
+  } else {
+    result = await pool.query(`
+      SELECT l.*, u.name AS seller_name,
+             c.name AS category_name, c.icon AS category_icon
+      FROM   listings l
+      JOIN   users      u ON u.id = l.user_id
+      JOIN   categories c ON c.id = l.category_id
+      WHERE  l.id != $1 AND l.status = 'active' AND l.category_id = $2
+      ORDER  BY l.created_at DESC
+      LIMIT  6
+    `, [req.params.id, l.category_id]);
+  }
+  res.json(result.rows);
+});
 
-  if (!listing) return res.status(404).json({ error: "Listing not found" });
+// ── GET /api/listings/:id ─────────────────────────────────────────────────────
+router.get("/:id", optionalAuth, async (req, res) => {
+  const result = await pool.query(`
+    SELECT l.*, u.name AS seller_name, u.phone AS seller_phone,
+           u.created_at AS seller_since, u.avatar AS seller_avatar,
+           c.name AS category_name, c.icon AS category_icon
+    FROM   listings l
+    JOIN   users      u ON u.id = l.user_id
+    JOIN   categories c ON c.id = l.category_id
+    WHERE  l.id = $1 AND l.status != 'deleted'
+  `, [req.params.id]);
 
-  db.prepare("UPDATE listings SET views = views + 1 WHERE id = ?").run(listing.id);
+  if (!result.rows.length) return res.status(404).json({ error: "Listing not found" });
 
-  // Notify seller every 10 views
+  await pool.query("UPDATE listings SET views = views + 1 WHERE id = $1", [req.params.id]);
+
+  const listing = result.rows[0];
   const newViews = listing.views + 1;
   if (newViews % 10 === 0) {
+    const { createNotification } = require("./notifications");
     createNotification(
       listing.user_id,
       "view",
@@ -453,159 +304,92 @@ router.get("/:id", optionalAuth, (req, res) => {
       `/listing.html?id=${listing.id}`
     );
   }
-  listing.images = JSON.parse(listing.images || "[]");
-  listing.tags   = JSON.parse(listing.tags   || "[]");
+
   res.json(listing);
 });
 
 // ── POST /api/listings ────────────────────────────────────────────────────────
-router.post("/", requireAuth, upload.array("images", 6), (req, res) => {
-  const { title, description, price, condition, category_id, location } = req.body;
+router.post("/", requireAuth, upload.array("images", 6), async (req, res) => {
+  const { title, description, price, condition, category_id, location, reason, tags } = req.body;
 
   if (!title || !description || !price || !condition || !category_id || !location)
     return res.status(400).json({ error: "All fields are required" });
 
   const images = (req.files || []).map(f => f.path);
-  const reason = req.body.reason || null;
-  const tags   = req.body.tags   || "[]";
 
-  const result = db
-    .prepare(`
-      INSERT INTO listings (user_id, category_id, title, description, reason, price, condition, location, images, tags)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `)
-    .run(req.user.id, category_id, title, description, reason,
-         parseFloat(price), condition, location, JSON.stringify(images), tags);
+  const result = await pool.query(`
+    INSERT INTO listings
+      (user_id, category_id, title, description, reason, price, condition, location, images, tags)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+    RETURNING *
+  `, [
+    req.user.id, category_id, title, description,
+    reason || null, parseFloat(price), condition, location,
+    JSON.stringify(images), tags || "[]"
+  ]);
 
-  const listing = db.prepare("SELECT * FROM listings WHERE id = ?").get(result.lastInsertRowid);
-  listing.images = JSON.parse(listing.images);
-  listing.tags   = JSON.parse(listing.tags || "[]");
-  res.status(201).json(listing);
+  res.status(201).json(result.rows[0]);
 });
 
 // ── PATCH /api/listings/:id ───────────────────────────────────────────────────
-router.patch("/:id", requireAuth, (req, res) => {
-  const listing = db.prepare("SELECT * FROM listings WHERE id = ?").get(req.params.id);
-  if (!listing)                        return res.status(404).json({ error: "Not found" });
-  if (listing.user_id !== req.user.id) return res.status(403).json({ error: "Forbidden" });
+router.patch("/:id", requireAuth, async (req, res) => {
+  const listRes = await pool.query("SELECT * FROM listings WHERE id = $1", [req.params.id]);
+  if (!listRes.rows.length)               return res.status(404).json({ error: "Not found" });
+  if (listRes.rows[0].user_id !== req.user.id) return res.status(403).json({ error: "Forbidden" });
 
-  const { title, description, price, condition, location, status, tags, images, reason } = req.body;
+  const { title, description, price, condition, location, status, reason, tags, images, category_id } = req.body;
+  const l = listRes.rows[0];
 
-  db.prepare(`
-    UPDATE listings
-    SET title       = COALESCE(?, title),
-        description = COALESCE(?, description),
-        price       = COALESCE(?, price),
-        condition   = COALESCE(?, condition),
-        location    = COALESCE(?, location),
-        status      = COALESCE(?, status),
-        reason      = COALESCE(?, reason),
-        tags        = COALESCE(?, tags),
-        images      = COALESCE(?, images),
-        category_id = COALESCE(?, category_id)
-    WHERE id = ?
-  `).run(
-    title        || null,
-    description  || null,
-    price        ? parseFloat(price) : null,
-    condition    || null,
-    location     || null,
-    status       || null,
-    reason       || null,
-    tags         || null,
-    images       || null,
-    req.body.category_id || null,
-    listing.id
-  );
+  const result = await pool.query(`
+    UPDATE listings SET
+      title       = COALESCE($1,  title),
+      description = COALESCE($2,  description),
+      price       = COALESCE($3,  price),
+      condition   = COALESCE($4,  condition),
+      location    = COALESCE($5,  location),
+      status      = COALESCE($6,  status),
+      reason      = COALESCE($7,  reason),
+      tags        = COALESCE($8,  tags),
+      images      = COALESCE($9,  images),
+      category_id = COALESCE($10, category_id)
+    WHERE id = $11
+    RETURNING *
+  `, [
+    title || null, description || null,
+    price ? parseFloat(price) : null,
+    condition || null, location || null, status || null,
+    reason || null,
+    tags ? tags : null,
+    images ? images : null,
+    category_id || null,
+    req.params.id
+  ]);
 
-  const updated = db.prepare("SELECT * FROM listings WHERE id = ?").get(listing.id);
-  updated.images = JSON.parse(updated.images || "[]");
-  updated.tags   = JSON.parse(updated.tags   || "[]");
-  res.json(updated);
+  res.json(result.rows[0]);
 });
 
 // ── DELETE /api/listings/:id ──────────────────────────────────────────────────
-router.delete("/:id", requireAuth, (req, res) => {
-  const listing = db.prepare("SELECT * FROM listings WHERE id = ?").get(req.params.id);
-  if (!listing)                        return res.status(404).json({ error: "Not found" });
-  if (listing.user_id !== req.user.id) return res.status(403).json({ error: "Forbidden" });
+router.delete("/:id", requireAuth, async (req, res) => {
+  const listRes = await pool.query("SELECT * FROM listings WHERE id = $1", [req.params.id]);
+  if (!listRes.rows.length)               return res.status(404).json({ error: "Not found" });
+  if (listRes.rows[0].user_id !== req.user.id) return res.status(403).json({ error: "Forbidden" });
 
-  db.prepare("UPDATE listings SET status = 'deleted' WHERE id = ?").run(listing.id);
+  await pool.query("UPDATE listings SET status = 'deleted' WHERE id = $1", [req.params.id]);
   res.json({ success: true });
 });
 
-// ── GET /api/listings/:id/related — similar listings ─────────────────────────
-router.get("/:id/related", (req, res) => {
-  const listing = db.prepare("SELECT * FROM listings WHERE id = ?").get(req.params.id);
-  if (!listing) return res.json([]);
+// ── POST /api/listings/:id/promote ───────────────────────────────────────────
+router.post("/:id/promote", requireAuth, async (req, res) => {
+  const listRes = await pool.query("SELECT * FROM listings WHERE id = $1", [req.params.id]);
+  if (!listRes.rows.length)               return res.status(404).json({ error: "Not found" });
+  if (listRes.rows[0].user_id !== req.user.id) return res.status(403).json({ error: "Forbidden" });
+  if (listRes.rows[0].status !== "active") return res.status(400).json({ error: "Only active listings can be promoted" });
 
-  const tags = JSON.parse(listing.tags || "[]");
-
-  // Try to find listings in same category with matching tags first
-  let related = [];
-
-  if (tags.length) {
-    const tagConditions = tags.map(() => "l.tags LIKE ?").join(" OR ");
-    const tagParams     = tags.map(t => `%${t}%`);
-
-    related = db.prepare(`
-      SELECT l.*, u.name AS seller_name,
-             c.name AS category_name, c.icon AS category_icon
-      FROM   listings l
-      JOIN   users      u ON u.id = l.user_id
-      JOIN   categories c ON c.id = l.category_id
-      WHERE  l.id != ?
-      AND    l.status = 'active'
-      AND    (l.category_id = ? OR ${tagConditions})
-      ORDER  BY l.created_at DESC
-      LIMIT  6
-    `).all(listing.id, listing.category_id, ...tagParams)
-      .map(row => ({
-        ...row,
-        images: JSON.parse(row.images || "[]"),
-        tags:   JSON.parse(row.tags   || "[]"),
-      }));
-  }
-
-  // Fallback — just same category
-  if (related.length < 3) {
-    related = db.prepare(`
-      SELECT l.*, u.name AS seller_name,
-             c.name AS category_name, c.icon AS category_icon
-      FROM   listings l
-      JOIN   users      u ON u.id = l.user_id
-      JOIN   categories c ON c.id = l.category_id
-      WHERE  l.id != ?
-      AND    l.status = 'active'
-      AND    l.category_id = ?
-      ORDER  BY l.created_at DESC
-      LIMIT  6
-    `).all(listing.id, listing.category_id)
-      .map(row => ({
-        ...row,
-        images: JSON.parse(row.images || "[]"),
-        tags:   JSON.parse(row.tags   || "[]"),
-      }));
-  }
-
-  res.json(related);
-});
-
-// ── POST /api/listings/:id/promote — promote a listing ───────────────────────
-router.post("/:id/promote", requireAuth, (req, res) => {
-  const listing = db.prepare("SELECT * FROM listings WHERE id = ?").get(req.params.id);
-
-  if (!listing)                        return res.status(404).json({ error: "Not found" });
-  if (listing.user_id !== req.user.id) return res.status(403).json({ error: "Forbidden" });
-  if (listing.status !== "active")     return res.status(400).json({ error: "Only active listings can be promoted" });
-
-  // Promote for 7 days
-  const until = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-
-  db.prepare(`
-    UPDATE listings SET is_promoted = 1, promoted_until = ? WHERE id = ?
-  `).run(until, listing.id);
-
+  const until = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  await pool.query(
+    "UPDATE listings SET is_promoted = 1, promoted_until = $1 WHERE id = $2",
+    [until, req.params.id]
+  );
   res.json({ success: true, promoted_until: until });
 });
 
