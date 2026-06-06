@@ -1,24 +1,27 @@
 const express  = require("express");
 const multer   = require("multer");
 const path     = require("path");
-const fs       = require("fs");
 const db       = require("../db/database");
 const { createNotification } = require("./notifications");
 const { requireAuth, optionalAuth } = require("../middleware/auth");
 
 const router = express.Router();
 
-// ── Multer ────────────────────────────────────────────────────────────────────
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const dir = path.join(__dirname, "../../public/uploads");
-    fs.mkdirSync(dir, { recursive: true });
-    cb(null, dir);
-  },
-  filename: (req, file, cb) => {
-    const ext  = path.extname(file.originalname);
-    const name = `${Date.now()}-${Math.round(Math.random() * 1e6)}${ext}`;
-    cb(null, name);
+const cloudinary             = require("cloudinary").v2;
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key:    process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder:         "sellanythingke/listings",
+    allowed_formats: ["jpg", "jpeg", "png", "webp"],
+    transformation: [{ width: 1200, height: 900, crop: "limit", quality: "auto" }],
   },
 });
 
@@ -462,7 +465,7 @@ router.post("/", requireAuth, upload.array("images", 6), (req, res) => {
   if (!title || !description || !price || !condition || !category_id || !location)
     return res.status(400).json({ error: "All fields are required" });
 
-  const images = (req.files || []).map(f => `/uploads/${f.filename}`);
+  const images = (req.files || []).map(f => f.path);
   const reason = req.body.reason || null;
   const tags   = req.body.tags   || "[]";
 

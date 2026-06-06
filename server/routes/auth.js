@@ -88,18 +88,23 @@ router.get("/user/:id", (req, res) => {
 
 // ── POST /api/auth/avatar — upload profile picture ───────────────────────────
 const multer = require("multer");
-const fs     = require("fs");
-const path2  = require("path");
 
-const avatarStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const dir = path2.join(__dirname, "../../public/uploads/avatars");
-    fs.mkdirSync(dir, { recursive: true });
-    cb(null, dir);
-  },
-  filename: (req, file, cb) => {
-    const ext = path2.extname(file.originalname);
-    cb(null, `avatar-${req.user.id}-${Date.now()}${ext}`);
+
+const cloudinary             = require("cloudinary").v2;
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key:    process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+const avatarStorage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder:          "sellanythingke/avatars",
+    allowed_formats: ["jpg", "jpeg", "png", "webp"],
+    transformation:  [{ width: 200, height: 200, crop: "fill", gravity: "face", quality: "auto" }],
   },
 });
 
@@ -115,7 +120,7 @@ const avatarUpload = multer({
 router.post("/avatar", require("../middleware/auth").requireAuth, avatarUpload.single("avatar"), (req, res) => {
   if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
-  const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+  const avatarUrl = req.file.path;
   db.prepare("UPDATE users SET avatar = ? WHERE id = ?").run(avatarUrl, req.user.id);
 
   res.json({ avatar: avatarUrl });
