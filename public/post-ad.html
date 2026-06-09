@@ -152,18 +152,18 @@
     updateNav();
 
     // Load categories with subcategories
+    // Load categories with subcategories
     const cats = await api.getCategories();
     let catOptions = `<option value="">Select category</option>`;
     cats.forEach(parent => {
       if (parent.children && parent.children.length) {
-        // Parent as group header, children as options
-        catOptions += `<optgroup label="${parent.icon} ${parent.name}">`;
+        catOptions += `<optgroup label="${parent.name}">`;
         parent.children.forEach(child => {
-          catOptions += `<option value="${child.id}">${child.icon} ${child.name}</option>`;
+          catOptions += `<option value="${child.id}">${child.name}</option>`;
         });
         catOptions += `</optgroup>`;
       } else {
-        catOptions += `<option value="${parent.id}">${parent.icon} ${parent.name}</option>`;
+        catOptions += `<option value="${parent.id}">${parent.name}</option>`;
       }
     });
     document.getElementById("category").innerHTML = catOptions;

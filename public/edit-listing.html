@@ -167,17 +167,15 @@
 
   // ── Load categories ───────────────────────────────────────────────────────
   async function loadCategories() {
-    const cats = await api.getCategories();
-    let html = `<option value="">Select category</option>`;
     cats.forEach(parent => {
       if (parent.children && parent.children.length) {
-        html += `<optgroup label="${parent.icon} ${parent.name}">`;
+        html += `<optgroup label="${parent.name}">`;
         parent.children.forEach(child => {
-          html += `<option value="${child.id}">${child.icon} ${child.name}</option>`;
+          html += `<option value="${child.id}">${child.name}</option>`;
         });
         html += `</optgroup>`;
       } else {
-        html += `<option value="${parent.id}">${parent.icon} ${parent.name}</option>`;
+        html += `<option value="${parent.id}">${parent.name}</option>`;
       }
     });
     document.getElementById("category").innerHTML = html;
