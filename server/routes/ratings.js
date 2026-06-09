@@ -1,29 +1,29 @@
 const express = require("express");
-const db      = require("../db/database");
+const pool    = require("../db/postgres");
 const { requireAuth } = require("../middleware/auth");
-const { createNotification } = require("./notifications");
 
 const router = express.Router();
 
-// ── GET /api/ratings/:userId — get all ratings for a user ───────────────────
-router.get("/:userId", (req, res) => {
-  const ratings = db.prepare(`
+// ── GET /api/ratings/:userId ──────────────────────────────────────────────────
+router.get("/:userId", async (req, res) => {
+  const result = await pool.query(`
     SELECT r.*, u.name AS rater_name
     FROM   ratings r
     JOIN   users u ON u.id = r.rater_id
-    WHERE  r.rated_id = ?
+    WHERE  r.rated_id = $1
     ORDER  BY r.created_at DESC
-  `).all(req.params.userId);
+  `, [req.params.userId]);
 
-  const avg = ratings.length
+  const ratings = result.rows;
+  const avg     = ratings.length
     ? (ratings.reduce((sum, r) => sum + r.score, 0) / ratings.length).toFixed(1)
     : null;
 
   res.json({ ratings, average: avg, total: ratings.length });
 });
 
-// ── POST /api/ratings/:userId — submit or update a rating ───────────────────
-router.post("/:userId", requireAuth, (req, res) => {
+// ── POST /api/ratings/:userId ─────────────────────────────────────────────────
+router.post("/:userId", requireAuth, async (req, res) => {
   const rated_id = parseInt(req.params.userId);
   const rater_id = req.user.id;
 
@@ -31,46 +31,45 @@ router.post("/:userId", requireAuth, (req, res) => {
     return res.status(400).json({ error: "You cannot rate yourself" });
 
   const { score, review } = req.body;
-
   if (!score || score < 1 || score > 5)
     return res.status(400).json({ error: "Score must be between 1 and 5" });
 
-  // Upsert — update if already rated, insert if not
-  const existing = db.prepare(
-    "SELECT id FROM ratings WHERE rater_id = ? AND rated_id = ?"
-  ).get(rater_id, rated_id);
+  const existing = await pool.query(
+    "SELECT id FROM ratings WHERE rater_id = $1 AND rated_id = $2",
+    [rater_id, rated_id]
+  );
 
-  if (existing) {
-    db.prepare(`
-      UPDATE ratings SET score = ?, review = ?, created_at = datetime('now')
-      WHERE rater_id = ? AND rated_id = ?
-    `).run(score, review || null, rater_id, rated_id);
+  if (existing.rows.length) {
+    await pool.query(`
+      UPDATE ratings SET score = $1, review = $2, created_at = NOW()
+      WHERE rater_id = $3 AND rated_id = $4
+    `, [score, review || null, rater_id, rated_id]);
   } else {
-    db.prepare(`
-      INSERT INTO ratings (rater_id, rated_id, score, review)
-      VALUES (?, ?, ?, ?)
-    `).run(rater_id, rated_id, score, review || null);
+    await pool.query(
+      "INSERT INTO ratings (rater_id, rated_id, score, review) VALUES ($1, $2, $3, $4)",
+      [rater_id, rated_id, score, review || null]
+    );
   }
 
-  // Notify the rated user
-  const rater = db.prepare("SELECT name FROM users WHERE id = ?").get(rater_id);
-  const rated = db.prepare("SELECT name FROM users WHERE id = ?").get(rated_id);
+  // Notify rated user
+  const rater = await pool.query("SELECT name FROM users WHERE id = $1", [rater_id]);
+  const { createNotification } = require("./notifications");
   createNotification(
     rated_id,
     "rating",
-    `${rater.name} gave you a ${score}-star rating`,
+    `${rater.rows[0].name} gave you a ${score}-star rating`,
     `/profile.html?id=${rated_id}`
   );
 
   res.json({ success: true });
 });
 
-// ── DELETE /api/ratings/:userId — remove your rating ───────────────────────
-router.delete("/:userId", requireAuth, (req, res) => {
-  db.prepare(
-    "DELETE FROM ratings WHERE rater_id = ? AND rated_id = ?"
-  ).run(req.user.id, parseInt(req.params.userId));
-
+// ── DELETE /api/ratings/:userId ───────────────────────────────────────────────
+router.delete("/:userId", requireAuth, async (req, res) => {
+  await pool.query(
+    "DELETE FROM ratings WHERE rater_id = $1 AND rated_id = $2",
+    [req.user.id, parseInt(req.params.userId)]
+  );
   res.json({ success: true });
 });
 

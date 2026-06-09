@@ -1,71 +1,76 @@
 const express = require("express");
-const db      = require("../db/database");
+const pool    = require("../db/postgres");
 const { requireAuth } = require("../middleware/auth");
 
 const router = express.Router();
 
 // ── GET /api/notifications ────────────────────────────────────────────────────
-router.get("/", requireAuth, (req, res) => {
-  const notifications = db.prepare(`
+router.get("/", requireAuth, async (req, res) => {
+  const result = await pool.query(`
     SELECT * FROM notifications
-    WHERE  user_id = ?
+    WHERE  user_id = $1
     ORDER  BY created_at DESC
     LIMIT  30
-  `).all(req.user.id);
+  `, [req.user.id]);
 
-  const unread = db.prepare(`
-    SELECT COUNT(*) AS n FROM notifications
-    WHERE user_id = ? AND is_read = 0
-  `).get(req.user.id).n;
+  const unread = await pool.query(`
+    SELECT COUNT(*) FROM notifications
+    WHERE user_id = $1 AND is_read = 0
+  `, [req.user.id]);
 
-  res.json({ notifications, unread });
+  res.json({
+    notifications: result.rows,
+    unread:        parseInt(unread.rows[0].count),
+  });
 });
 
-// ── POST /api/notifications/read — mark all as read ───────────────────────────
-router.post("/read", requireAuth, (req, res) => {
-  db.prepare(`
+// ── POST /api/notifications/read ─────────────────────────────────────────────
+router.post("/read", requireAuth, async (req, res) => {
+  await pool.query(`
     UPDATE notifications SET is_read = 1
-    WHERE user_id = ? AND is_read = 0
-  `).run(req.user.id);
+    WHERE user_id = $1 AND is_read = 0
+  `, [req.user.id]);
   res.json({ success: true });
 });
 
-// ── DELETE /api/notifications/:id — delete one ───────────────────────────────
-router.delete("/:id", requireAuth, (req, res) => {
-  const notif = db.prepare(
-    "SELECT * FROM notifications WHERE id = ? AND user_id = ?"
-  ).get(req.params.id, req.user.id);
+// ── DELETE /api/notifications/:id ────────────────────────────────────────────
+router.delete("/:id", requireAuth, async (req, res) => {
+  const result = await pool.query(
+    "SELECT * FROM notifications WHERE id = $1 AND user_id = $2",
+    [req.params.id, req.user.id]
+  );
+  if (!result.rows.length) return res.status(404).json({ error: "Not found" });
 
-  if (!notif) return res.status(404).json({ error: "Not found" });
-
-  db.prepare("DELETE FROM notifications WHERE id = ?").run(req.params.id);
+  await pool.query("DELETE FROM notifications WHERE id = $1", [req.params.id]);
   res.json({ success: true });
 });
 
-// ── DELETE /api/notifications — delete all ────────────────────────────────────
-router.delete("/", requireAuth, (req, res) => {
-  db.prepare("DELETE FROM notifications WHERE user_id = ?").run(req.user.id);
+// ── DELETE /api/notifications ─────────────────────────────────────────────────
+router.delete("/", requireAuth, async (req, res) => {
+  await pool.query("DELETE FROM notifications WHERE user_id = $1", [req.user.id]);
   res.json({ success: true });
 });
 
 module.exports = router;
 
 // ── Helper ────────────────────────────────────────────────────────────────────
-function createNotification(user_id, type, message, link) {
+async function createNotification(user_id, type, message, link) {
   try {
-    const recent = db.prepare(`
+    const recent = await pool.query(`
       SELECT id FROM notifications
-      WHERE user_id = ? AND type = ? AND message = ?
-      AND created_at > datetime('now', '-1 hour')
-    `).get(user_id, type, message);
+      WHERE user_id = $1 AND type = $2 AND message = $3
+      AND created_at > NOW() - INTERVAL '1 hour'
+    `, [user_id, type, message]);
 
-    if (!recent) {
-      db.prepare(`
+    if (!recent.rows.length) {
+      await pool.query(`
         INSERT INTO notifications (user_id, type, message, link)
-        VALUES (?, ?, ?, ?)
-      `).run(user_id, type, message, link || null);
+        VALUES ($1, $2, $3, $4)
+      `, [user_id, type, message, link || null]);
     }
-  } catch {}
+  } catch (e) {
+    console.error("Notification error:", e.message);
+  }
 }
 
 module.exports.createNotification = createNotification;
