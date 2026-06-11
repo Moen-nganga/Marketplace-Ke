@@ -296,15 +296,20 @@
   }
 
   function filterCategory(id, catIndex, el) {
-    document.querySelectorAll(".cat-chip").forEach(c => c.classList.remove("active"));
-    el.classList.add("active");
-    activeCategoryId = id;
-    currentPage = 1;
-    document.getElementById("section-title").textContent =
-      id === null ? "Latest Listings" : allCategories[catIndex]?.name || "Listings";
-    loadListings();
+    if (id === null) {
+      // All — just filter on homepage
+      document.querySelectorAll(".cat-chip").forEach(c => c.classList.remove("active"));
+      el.classList.add("active");
+      activeCategoryId = null;
+      currentPage = 1;
+      document.getElementById("section-title").textContent = "Latest Listings";
+      loadListings();
+    } else {
+      // Go to category page
+      window.location.href = `/category.html?id=${id}`;
+    }
   }
-
+  
   function selectSubcategory(id, name) {
     document.querySelectorAll(".cat-chip").forEach(c => c.classList.remove("active"));
     activeCategoryId = id;

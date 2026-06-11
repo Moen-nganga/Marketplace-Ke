@@ -137,44 +137,24 @@ async function migrate() {
 
 async function seedCategories(client) {
   const parents = [
-    ["Phones",           "smartphone"],
-    ["Electronics",      "laptop"],
-    ["Vehicles",         "car"],
+    ["Phones & Tablets", "smartphone"],
+    ["TVs & Audio",      "tv"],
+    ["Appliances",       "plug"],
+    ["Health & Beauty",  "heart"],
+    ["Home & Office",    "home"],
     ["Fashion",          "shirt"],
-    ["Home & Garden",    "home"],
-    ["Sports & Leisure", "trophy"],
-    ["Jobs",             "briefcase"],
-    ["Kids & Baby",      "baby"],
-    ["Animals & Pets",   "paw-print"],
-    ["Services",         "wrench"],
+    ["Computing",        "laptop"],
+    ["Gaming",           "gamepad-2"],
+    ["Supermarket",      "shopping-cart"],
+    ["Baby Products",    "baby"],
+    ["Other Categories", "grid"],
   ];
 
-  const children = {
-    "Phones":           [["Mobile Phones","smartphone"],["Accessories","headphones"],["Smart Watches","watch"],["Tablets","tablet"],["Headphones","headphones"]],
-    "Electronics":      [["Laptops","laptop"],["Desktops","monitor"],["Cameras","camera"],["Gaming","gamepad-2"],["TVs","tv"]],
-    "Vehicles":         [["Cars","car"],["Motorcycles","bike"],["Trucks","truck"],["Spare Parts","settings"],["Boats","anchor"]],
-    "Fashion":          [["Men's Clothing","shirt"],["Women's Clothing","shirt"],["Shoes","footprints"],["Bags","shopping-bag"],["Watches","watch"]],
-    "Home & Garden":    [["Furniture","sofa"],["Kitchen","utensils"],["Garden","flower-2"],["Appliances","plug"],["Bedding","bed"]],
-    "Sports & Leisure": [["Exercise Equipment","dumbbell"],["Outdoor","tent"],["Team Sports","trophy"],["Water Sports","waves"],["Cycling","bike"]],
-    "Jobs":             [["Full Time","briefcase"],["Part Time","clock"],["Freelance","laptop"],["Internships","graduation-cap"],["Remote","globe"]],
-    "Kids & Baby":      [["Clothes","shirt"],["Toys","gamepad-2"],["Feeding","baby"],["Strollers","baby"],["Safety","shield"]],
-    "Animals & Pets":   [["Dogs","dog"],["Cats","cat"],["Birds","bird"],["Fish","fish"],["Pet Supplies","bone"]],
-    "Services":         [["Cleaning","sparkles"],["Repairs","wrench"],["Tutoring","book-open"],["Beauty","scissors"],["Moving","package"]],
-  };
-
   for (const [name, icon] of parents) {
-    const { rows } = await client.query(
-      "INSERT INTO categories (name, icon) VALUES ($1, $2) RETURNING id",
+    await client.query(
+      "INSERT INTO categories (name, icon) VALUES ($1, $2)",
       [name, icon]
     );
-    const parentId = rows[0].id;
-
-    for (const [cname, cicon] of (children[name] || [])) {
-      await client.query(
-        "INSERT INTO categories (name, icon, parent_id) VALUES ($1, $2, $3)",
-        [cname, cicon, parentId]
-      );
-    }
   }
   console.log("✅ Categories seeded");
 }
