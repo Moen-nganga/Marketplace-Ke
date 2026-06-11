@@ -4,6 +4,67 @@ const pool = require("./server/db/postgres");
 async function seed() {
   const client = await pool.connect();
   try {
+     // ── Home & Office ────────────────────────────────────────────────────────
+    const home = await client.query(
+      "SELECT id FROM categories WHERE name = 'Home & Office'"
+    );
+    const homeId = home.rows[0].id;
+
+    const homeSubs = [
+      // Kitchen & Dining
+      ["Water Dispensers",         "home"],
+      ["Kitchen Utensils",         "utensils"],
+      ["Cookware",                 "utensils"],
+      ["Kitchen Storage",          "home"],
+      ["Cutlery",                  "utensils"],
+      ["Shelves & Racks",          "home"],
+      ["Flasks & Bottles",         "home"],
+      // Bedding
+      ["Pillows",                  "bed"],
+      ["Duvets",                   "bed"],
+      ["Mosquito Nets",            "bed"],
+      ["Mattresses",               "bed"],
+      ["Bedding Accessories",      "bed"],
+      ["Sheets & Pillow Cases",    "bed"],
+      ["Decorative Pillows",       "bed"],
+      // Lighting & Outdoor
+      ["Solar Panels",             "plug"],
+      ["Portable Power",           "plug"],
+      ["Lamps & Shades",           "plug"],
+      ["Decorative Lights",        "plug"],
+      ["Ceiling Lights",           "plug"],
+      ["Outdoor Lighting",         "plug"],
+      // Home Decor
+      ["Rugs & Carpets",           "home"],
+      ["Wall Art",                 "home"],
+      ["Door Mats",                "home"],
+      ["Artificial Plants",        "flower-2"],
+      ["Clocks",                   "clock"],
+      ["Mirrors",                  "home"],
+      ["Furniture",                "sofa"],
+      // Home Organization
+      ["Wardrobes",                "home"],
+      ["Shoe Racks",               "home"],
+      ["Bathroom Storage",         "home"],
+      ["Laundry Storage",          "home"],
+      ["Racks & Shelves",          "home"],
+      ["Baskets, Bins & Containers","home"],
+      // Top Brands
+      ["Sundabest",                "home"],
+      ["Nunix",                    "home"],
+      ["Rashnik",                  "home"],
+      ["NiceOne",                  "home"],
+      ["Ecoa",                     "home"],
+      ["Ailyons",                  "home"],
+    ];
+
+    for (const [name, icon] of homeSubs) {
+      await client.query(
+        "INSERT INTO categories (name, icon, parent_id) VALUES ($1, $2, $3)",
+        [name, icon, homeId]
+      );
+    }
+    console.log("✅ Home & Office subcategories seeded");
     // ── Phones & Tablets ────────────────────────────────────────────────────
     const phones = await client.query(
       "SELECT id FROM categories WHERE name = 'Phones & Tablets'"
@@ -22,7 +83,7 @@ async function seed() {
       ["Cases & Sleeves",            "shield"],
       ["Portable Powerbanks",        "battery"],
       ["Batteries & Battery Packs",  "battery"],
-      ["Wall Chargers",              "plug"],
+      ["Wall Chargers",              "plug"]
       ["Headphones",                 "headphones"],
       ["Tripods",                    "camera"],
       ["Stands",                     "monitor"],
