@@ -4,6 +4,65 @@ const pool = require("./server/db/postgres");
 async function seed() {
   const client = await pool.connect();
   try {
+    // ── Supermarket ──────────────────────────────────────────────────────
+    const supermarket = await client.query(
+      "SELECT id FROM categories WHERE name = 'Supermarket'"
+    );
+    const supermarketId = supermarket.rows[0].id;
+
+    const supermarketSubs = [
+      // Drinks
+      ["Beer, Wines & Spirits",          "shopping-bag"],
+      ["Carbonated Drinks",              "shopping-bag"],
+      ["Dairy",                          "shopping-bag"],
+      ["Water",                          "shopping-bag"],
+      ["Juice & Non Carbonated Drinks",  "shopping-bag"],
+      // Household Supplies
+      ["Air Fresheners",                 "shopping-bag"],
+      ["Bathroom Cleaners",              "shopping-bag"],
+      ["Bulb & Batteries",               "shopping-bag"],
+      ["Floor Cleaners",                 "shopping-bag"],
+      ["Kitchen Cleaners",               "shopping-bag"],
+      ["Laundry",                        "shopping-bag"],
+      ["Paper & Rolls",                  "shopping-bag"],
+      ["Household Cleaners & Sundries",  "shopping-bag"],
+    ];
+
+    for (const [name, icon] of supermarketSubs) {
+      await client.query(
+        "INSERT INTO categories (name, icon, parent_id) VALUES ($1, $2, $3)",
+        [name, icon, supermarketId]
+      );
+    }
+    console.log("✅ Supermarket subcategories seeded");
+    // ── Gaming ──────────────────────────────────────────────────────
+    const gaming = await client.query(
+      "SELECT id FROM categories WHERE name = 'Gaming'"
+    );
+    const gamingId = gaming.rows[0].id;
+
+    const gamingSubs = [
+      // Playstation
+      ["Playstation 5",         "gamepad-2"],
+      ["Playstation 4",         "gamepad-2"],
+      ["Playstation 3",         "gamepad-2"],
+      ["PS Vita",               "gamepad-2"],
+      // Nintendo
+      ["Nintendo DS",           "gamepad-2"],
+      ["Nintendo 3DS",          "gamepad-2"],
+      ["Wii",                   "gamepad-2"],
+      ["Nintendo Switch",       "gamepad-2"],
+      // PC Gaming
+      ["Games",                 "gamepad-2"],
+    ];
+
+    for (const [name, icon] of gamingSubs) {
+      await client.query(
+        "INSERT INTO categories (name, icon, parent_id) VALUES ($1, $2, $3)",
+        [name, icon, gamingId]
+      );
+    }
+    console.log("✅ Gaming subcategories seeded");
     // ── Computing ──────────────────────────────────────────────────────
     const computing = await client.query(
       "SELECT id FROM categories WHERE name = 'Computing'"
@@ -56,7 +115,7 @@ async function seed() {
     const fashionId = fashion.rows[0].id;
 
     const fashionSubs = [
-      // MEN'S CLOTHING
+      // Men's Clothing
       ["Shirts",                       "shirt"],
       ["Suits & Sports Coats",         "shirt"],
       ["Jeans",                        "shirt"],
@@ -64,7 +123,7 @@ async function seed() {
       ["T-Shirts & Tanks",             "shirt"],
       ["Pants",                        "shirt"],
       ["Shorts",                       "shirt"],
-      // WOMEN'S CLOTHING
+      // Women's Clothing
       ["Dresses",                      "shirt"],
       ["Suits & Blazers",              "shirt"],
       ["Tops & Trees",                 "shirt"],
@@ -74,19 +133,19 @@ async function seed() {
       ["Lingerie, Sleep & Lounge",         "shirt"],
       ["Jeans",                        "shirt"],
       ["Shorts",                       "shirt"],
-      // KID'S CLOTHING
+      // Kid's Clothing
       ["Boys",                         "shirt"],
       ["Girls",                        "shirt"],
-      // MEN'S SHOES
+      // Men's Shoes
       ["Fashion Sneakers",             "shirt"],
       ["Loafers & Slip Ons",           "shirt"],
-      // WOMEN'S SHOES
+      // Women's Shoes
       ["Flats",                        "shirt"],
       ["Sandals",                      "shirt"],
-      // MEN'S ACCESSORIES
+      // Men's Accessories
       ["Watches",                      "shirt"],
       ["Belts",                        "shirt"],
-      // WOMEN'S ACCESSORIES
+      // Women's Accessories
       ["Jewerly",                      "shirt"],
       ["Handbangs & Wallets",          "shirt"],
     ]
