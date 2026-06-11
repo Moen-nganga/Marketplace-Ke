@@ -4,6 +4,99 @@ const pool = require("./server/db/postgres");
 async function seed() {
   const client = await pool.connect();
   try {
+    // ── Computing ──────────────────────────────────────────────────────
+    const computing = await client.query(
+      "SELECT id FROM categories WHERE name = 'Computing'"
+    );
+    const computingId = computing.rows[0].id;
+
+    const computingSubs = [
+      // Laptops
+      ["Netbooks",               "laptop"],
+      ["Notebooks",                  "laptop"],
+      ["Ultrabooks",                      "laptop"],
+      // Computer Data Storage
+      ["External Hard Drives",                "laptop"],
+      ["USB Flash Drives", "laptop"],
+      // Laptop Brands
+      ["HP Laptops",         "laptop"],
+      ["Dell Laptops",           "laptop"],
+      ["Lenovo Laptops",              "laptop"],
+      ["Apple Laptops",            "laptop"],
+      ["Asus Laptops",            "laptop"],
+      // Computers & Accessories
+      ["Desktops",                  "laptop"],
+      ["Monitors",             "laptop"],
+      ["Laptop Accessories",            "laptop"],
+      ["Scanners",            "laptop"],
+      ["Printers",            "laptop"],
+      ["Keyboards & Mice",            "laptop"],
+      ["Computer Cable",            "laptop"],
+      ["Laptop Bags",            "laptop"],
+      // Computer Components
+      ["Internal Hard Drive",               "laptop"],
+      ["Graphic Cards",       "laptop"],
+      ["Fans & Cooling",                "laptop"],
+      ["CPU Processors",       "laptop"],
+      // Refurb Corner
+      ["Refurbished Laptops",                      "laptop"],
+    ];
+
+    for (const [name, icon] of computingSubs) {
+      await client.query(
+        "INSERT INTO categories (name, icon, parent_id) VALUES ($1, $2, $3)",
+        [name, icon, computingId]
+      );
+    }
+    console.log("✅ Computing subcategories seeded");
+    // ── Fashion ────────────────────────────────────────────────────────
+    const fashion = await client.query(
+      "SELECT id FROM categories WHERE name = 'Fashion'"
+    );
+    const fashionId = fashion.rows[0].id;
+
+    const fashionSubs = [
+      // MEN'S CLOTHING
+      ["Shirts",                       "shirt"],
+      ["Suits & Sports Coats",         "shirt"],
+      ["Jeans",                        "shirt"],
+      ["Underwear",                    "shirt"],
+      ["T-Shirts & Tanks",             "shirt"],
+      ["Pants",                        "shirt"],
+      ["Shorts",                       "shirt"],
+      // WOMEN'S CLOTHING
+      ["Dresses",                      "shirt"],
+      ["Suits & Blazers",              "shirt"],
+      ["Tops & Trees",                 "shirt"],
+      ["Coats, Jackets & Vests",         "shirt"],
+      ["Jumpsuits, Rompers & Overalls",         "shirt"],
+      ["Skirts",         "home"],
+      ["Lingerie, Sleep & Lounge",         "shirt"],
+      ["Jeans",                        "shirt"],
+      ["Shorts",                       "shirt"],
+      // KID'S CLOTHING
+      ["Boys",                         "shirt"],
+      ["Girls",                        "shirt"],
+      // MEN'S SHOES
+      ["Fashion Sneakers",             "shirt"],
+      ["Loafers & Slip Ons",           "shirt"],
+      // WOMEN'S SHOES
+      ["Flats",                        "shirt"],
+      ["Sandals",                      "shirt"],
+      // MEN'S ACCESSORIES
+      ["Watches",                      "shirt"],
+      ["Belts",                        "shirt"],
+      // WOMEN'S ACCESSORIES
+      ["Jewerly",                      "shirt"],
+      ["Handbangs & Wallets",          "shirt"],
+    ]
+    for (const [name, icon] of fashionSubs) {
+      await client.query(
+        "INSERT INTO categories (name, icon, parent_id) VALUES ($1, $2, $3)",
+        [name, icon, fashionId]
+      );
+    }
+    console.log("✅ Fashion subcategories seeded");
      // ── Home & Office ────────────────────────────────────────────────────────
     const home = await client.query(
       "SELECT id FROM categories WHERE name = 'Home & Office'"
