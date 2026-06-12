@@ -45,5 +45,5 @@ app.get("/{*splat}", (req, res) => {
 // ── Start ─────────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`\n  SellAnythingKE running at http://localhost:${PORT}\n`);
+  console.log(`\n  Marketplace Ke running at http://localhost:${PORT}\n`);
 });

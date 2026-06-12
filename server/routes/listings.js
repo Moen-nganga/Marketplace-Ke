@@ -17,7 +17,7 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
   cloudinary,
   params: {
-    folder:          "sellanythingke/listings",
+    folder:          "Marketplace Ke/listings",
     allowed_formats: ["jpg", "jpeg", "png", "webp"],
     transformation:  [{ width: 1200, height: 900, crop: "limit", quality: "auto" }],
   },

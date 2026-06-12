@@ -9,14 +9,14 @@
   })();
 </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Listing — SellAnythingKE</title>
+  <title>Listing — Marketplace Ke</title>
   <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body>
 
 <nav class="navbar">
   <div class="nav-inner">
-    <a href="/" class="nav-logo">SellAnythingKE</a>
+    <a href="/" class="nav-logo">Marketplace Ke</a>
     <div id="nav-auth"></div>
   </div>
 </nav>
@@ -225,7 +225,7 @@
     modal.innerHTML = `
       <div class="modal">
         <h3>🚩 Report Listing</h3>
-        <p>Help us keep SellAnythingKE safe. Tell us what's wrong with this listing.</p>
+        <p>Help us keep Marketplace Ke safe. Tell us what's wrong with this listing.</p>
 
         <div class="form-group">
           <label style="font-size:14px;font-weight:500;margin-bottom:6px;display:block">Reason *</label>
@@ -271,7 +271,7 @@
   async function loadListing() {
     try {
       const l = await api.getListing(id);
-      document.title = `${l.title} — SellAnythingKE`;
+      document.title = `${l.title} — Marketplace Ke`;
       render(l);
       // Record this view if logged in
       if (isLoggedIn()) api.recordView(id).catch(() => {});
@@ -387,7 +387,7 @@
     const url   = window.location.href;
     const title = l.title;
     const price = formatPrice(l.price);
-    const text  = `Check out this listing on SellAnythingKE: ${title} — ${price}`;
+    const text  = `Check out this listing on Marketplace Ke: ${title} — ${price}`;
 
     const modal = document.createElement("div");
     modal.className = "modal-overlay";
@@ -627,7 +627,7 @@ let isSavedListing = false;
 
       <!-- Brand -->
       <div class="footer-brand">
-        <div class="logo">SellAnythingKE</div>
+        <div class="logo">Marketplace Ke</div>
         <p>Kenya's free online marketplace. Buy and sell anything — electronics, vehicles, fashion, and more.</p>
       </div>
 
@@ -669,7 +669,7 @@ let isSavedListing = false;
 
     <!-- Bottom bar -->
     <div class="footer-bottom">
-      <p>© 2026 SellAnythingKE. All rights reserved.</p>
+      <p>© 2026 Marketplace Ke. All rights reserved.</p>
       <div></div>
     </div>
   </div>

@@ -19,7 +19,7 @@ cloudinary.config({
 const avatarStorage = new CloudinaryStorage({
   cloudinary,
   params: {
-    folder:          "sellanythingke/avatars",
+    folder:          "Marketplace Ke/avatars",
     allowed_formats: ["jpg", "jpeg", "png", "webp"],
     transformation:  [{ width: 200, height: 200, crop: "fill", gravity: "face", quality: "auto" }],
   },

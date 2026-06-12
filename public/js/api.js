@@ -275,7 +275,7 @@ function renderDashboard(user) {
   sidebar.innerHTML = `
     <!-- Header -->
     <<div class="dashboard-header">
-      <span class="logo">SellAnythingKE</span>
+      <span class="logo">Marketplace Ke</span>
     </div>
 
     <!-- User info -->
