@@ -4,6 +4,50 @@ const pool = require("./server/db/postgres");
 async function seed() {
   const client = await pool.connect();
   try {
+    // ── Baby Products ──────────────────────────────────────────────────────
+    const baby = await client.query(
+      "SELECT id FROM categories WHERE name = 'Baby Products'"
+    );
+    const babyId = baby.rows[0].id;
+
+    const babySubs = [
+      // Feeding
+      ["Pacifiers & Accessories",                "baby"],
+      ["Bottle-Feeding Equipments",              "baby"],
+      ["Solid Feeding",                          "baby"],
+      // Diapering
+      ["Diaper Bags",                            "baby"],
+      ["Disposable Diapers",                     "baby"],
+      ["Portbale Changing Pads",                 "baby"],
+      ["Cloth Diapers",                          "baby"],
+      ["Changing Tables",                        "baby"],
+      ["Wipers & Holders",                       "baby"],
+      // Gear
+      ["Walkers",                                "baby"],
+      ["Bagpacks & Carriers",                    "baby"],
+      ["Swings, Jumpers & Bouncers",             "baby"],
+      // Baby Safety
+      ["Monitors",                               "baby"],
+      ["Sleep Positioners",                      "baby"],
+      ["Edge & Corner Guards",                   "baby"],
+      // Baby & Toddler Toys
+      ["Building Toys",                          "baby"],
+      ["Toy Gift Sets",                          "baby"],
+      ["Bath Toys",                              "baby"],
+      // Sleeping And Nursery
+      ["Baby Beds",                              "baby"],
+      ["Baby Bedding",                           "baby"],
+      ["Nursery Beds",                           "baby"],
+      ["Baby Mattresses",                        "baby"],
+    ];
+
+    for (const [name, icon] of babySubs) {
+      await client.query(
+        "INSERT INTO categories (name, icon, parent_id) VALUES ($1, $2, $3)",
+        [name, icon, babyId]
+      );
+    }
+    console.log("✅ Baby subcategories seeded");
     // ── Supermarket ──────────────────────────────────────────────────────
     const supermarket = await client.query(
       "SELECT id FROM categories WHERE name = 'Supermarket'"

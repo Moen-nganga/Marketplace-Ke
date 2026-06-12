@@ -12,72 +12,9 @@
   <title>SellAnythingKE — Buy & Sell in Kenya</title>
   <link rel="stylesheet" href="/css/style.css" />
   <style>
-    .cat-chip-wrap {
-      position: relative;
-      display: inline-block;
-      z-index: 400;
-    }
     .categories-wrap {
       position: relative;
       z-index: 400;
-    }
-    .subcategory-dropdown {
-      display: none;
-      position: absolute;
-      top: calc(100% + 8px);
-      left: 0;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow-lg);
-      z-index: 300;
-      padding: 10px 12px;
-      flex-direction: row;
-      flex-wrap: wrap;
-      gap: 8px;
-      min-width: 320px;
-      max-width: 500px;
-    }
-    .cat-chip-wrap:hover .subcategory-dropdown {
-      display: flex;
-    }
-    .subcategory-dropdown a {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 12px;
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--text);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      background: var(--bg);
-      white-space: nowrap;
-      transition: all .15s;
-      text-decoration: none;
-    }
-    .subcategory-dropdown a:hover {
-      background: #fff0e6;
-      color: var(--brand);
-      border-color: var(--brand);
-    }
-    .subcategory-dropdown::before {
-      content: '';
-      position: absolute;
-      top: -7px;
-      left: 24px;
-      border: 7px solid transparent;
-      border-bottom-color: var(--border);
-      border-top: none;
-    }
-    .subcategory-dropdown::after {
-      content: '';
-      position: absolute;
-      top: -6px;
-      left: 25px;
-      border: 6px solid transparent;
-      border-bottom-color: var(--surface);
-      border-top: none;
     }
     .hero-search-wrap { position: relative; max-width: 540px; margin: 20px auto 0; }
     .hero-suggestions {
@@ -176,7 +113,7 @@
   </div>
 
   <!-- Space for subcategory dropdowns -->
-  <div style="height: 140px;"></div>
+  <div style="height: 20px;"></div>
 
   <!-- Section header -->
   <div class="section-header">
@@ -278,19 +215,9 @@
            <span class="label">All</span>
          </div>` +
         cats.map((c, i) => `
-          <div class="cat-chip-wrap">
-            <div class="cat-chip" onclick="filterCategory(${c.id}, ${i}, this)">
-              <span class="icon" style="color:${catColor(c.name)}">${lucideIcon(c.icon, 22)}</span>
-              <span class="label">${c.name}</span>
-            </div>
-            ${c.children && c.children.length ? `
-            <div class="subcategory-dropdown">
-              ${c.children.map(child => `
-                <a href="javascript:void(0)" onclick="selectSubcategory(${child.id}, '${child.name}')">
-                  <span style="display:inline-flex;align-items:center">${lucideIcon(child.icon, 16)}</span>
-                  ${child.name}
-                </a>`).join("")}
-            </div>` : ""}
+          <div class="cat-chip" onclick="filterCategory(${c.id}, ${i}, this)">
+            <span class="icon" style="color:${catColor(c.name)}">${lucideIcon(c.icon, 22)}</span>
+            <span class="label">${c.name}</span>
           </div>`).join("");
     } catch { bar.innerHTML = ""; }
   }
@@ -754,16 +681,16 @@
       <!-- Categories -->
       <div class="footer-col">
         <h4>Categories</h4>
-        <a href="/?cat=Phones">Phones</a>
-        <a href="/?cat=Electronics">Electronics</a>
-        <a href="/?cat=Vehicles">Vehicles</a>
+        <a href="/?id=2">Phones & Tablets</a>
+        <a href="/?cat=TV">TV</a>
+        <a href="/?cat=Vehicles">Appliances</a>
+        <a href="/?cat=Fashion%20%26%20Beauty">Health & Beauty</a>
+        <a href="/?cat=Home%20%26%20Office">Home & Office</a>
         <a href="/?cat=Fashion">Fashion</a>
-        <a href="/?cat=Home%20%26%20Garden">Home & Garden</a>
-        <a href="/?cat=Sports%20%26%20Leisure">Sports & Leisure</a>
-        <a href="/?cat=Jobs">Jobs</a>
-        <a href="/?cat=Kids%20%26%20Baby">Kids & Baby</a>
-        <a href="/?cat=Animals%20%26%20Pets">Animals & Pets</a>
-        <a href="/?cat=Services">Services</a>
+        <a href="/?cat=Computing">Computing</a>
+        <a href="/?cat=Gaming">Gaming/a>
+        <a href="/?cat=SUpermarket">Supermarket</a>
+        <a href="/?cat=Baby Products">Baby Products</a>
       </div>
 
       <!-- Help -->
