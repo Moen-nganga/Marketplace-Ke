@@ -220,12 +220,7 @@
       const cats = await api.getCategories();
       allCategories = cats;
 
-      bar.innerHTML =
-        `<div class="cat-chip active" onclick="filterCategory(null, null, this)">
-           <span class="icon" style="color:#e02020">${lucideIcon("home", 22)}</span>
-           <span class="label">All</span>
-         </div>` +
-        cats.map((c, i) => `
+      bar.innerHTML = cats.map((c, i) => `
           <div class="cat-chip" onclick="filterCategory(${c.id}, ${i}, this)">
             <span class="icon" style="color:${catColor(c.name)}">${lucideIcon(c.icon, 22)}</span>
             <span class="label">${c.name}</span>

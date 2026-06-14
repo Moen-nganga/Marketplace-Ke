@@ -216,7 +216,7 @@ function updateNav() {
         height: 70px; width: 64px;
         border-radius: 0; border: none;
         border-right: 1px solid var(--border);
-        z-index: 700;
+        z-index: 1001;
         background: var(--surface);
         color: #111111;
         display: flex; align-items: center; justify-content: center;

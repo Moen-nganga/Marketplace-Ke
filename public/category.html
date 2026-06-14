@@ -306,19 +306,77 @@
   function filterBySub(id, name) {
     activeSub = id;
     currentPage = 1;
-    document.getElementById("listings-title").textContent = name;
+
+    // Hide subcategories section, show listings full width
+    document.getElementById("subcats-section").style.display = "none";
+
+    // Show a "back to subcategories" button + breadcrumb
+    document.getElementById("listings-title").innerHTML = `
+      <button onclick="showAllSubcats()"
+              style="background:none;border:none;cursor:pointer;
+                     color:var(--brand);font-size:14px;font-weight:500;
+                     display:inline-flex;align-items:center;gap:6px;margin-right:10px;
+                     padding:0">
+        ← All Subcategories
+      </button>
+      <span style="color:var(--text)">${name}</span>
+    `;
+
     loadListings();
-    document.getElementById("listings-section")?.scrollIntoView({ behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
-    // Update meta to reflect the active subcategory
-    updateCategoryMeta({ id: categoryId, name: currentCatName }, name);
+  function showAllSubcats() {
+    activeSub = null;
+    currentPage = 1;
+    document.getElementById("subcats-section").style.display = "";
+    document.getElementById("listings-title").textContent = "All Listings";
+    loadListings();
 
+    // Remove highlight
     document.querySelectorAll(".subcat-item").forEach(el => {
       el.style.background = "";
       el.style.color = "";
     });
-    event.currentTarget.style.background = "#fff0e6";
-    event.currentTarget.style.color      = "var(--brand)";
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }function filterBySub(id, name) {
+    activeSub = id;
+    currentPage = 1;
+
+    // Hide subcategories section, show listings full width
+    document.getElementById("subcats-section").style.display = "none";
+
+    // Show a "back to subcategories" button + breadcrumb
+    document.getElementById("listings-title").innerHTML = `
+      <button onclick="showAllSubcats()"
+              style="background:none;border:none;cursor:pointer;
+                     color:var(--brand);font-size:14px;font-weight:500;
+                     display:inline-flex;align-items:center;gap:6px;margin-right:10px;
+                     padding:0">
+        ← All Subcategories
+      </button>
+      <span style="color:var(--text)">${name}</span>
+    `;
+
+    loadListings();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function showAllSubcats() {
+    activeSub = null;
+    currentPage = 1;
+    document.getElementById("subcats-section").style.display = "";
+    document.getElementById("listings-title").textContent = "All Listings";
+    loadListings();
+
+    // Remove highlight
+    document.querySelectorAll(".subcat-item").forEach(el => {
+      el.style.background = "";
+      el.style.color = "";
+    });
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   async function loadListings() {
