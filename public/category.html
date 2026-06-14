@@ -3,7 +3,30 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Category — Marketplace Ke</title>
+
+  <!-- SEO: defaults overwritten dynamically once category loads -->
+  <title>Category — Marketplace Ke | Buy &amp; Sell in Kenya</title>
+  <meta name="description" content="Browse categories on Marketplace Ke — Kenya's free online marketplace for new and used items." />
+  <meta name="robots" content="index, follow" />
+  <meta name="author" content="Marketplace Ke" />
+  <link rel="canonical" href="https://marketplaceke.co.ke/category.html" id="canonical-tag" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Marketplace Ke" />
+  <meta property="og:title" content="Category — Marketplace Ke" id="og-title" />
+  <meta property="og:description" content="Browse listings on Marketplace Ke — Kenya's free peer-to-peer marketplace." id="og-description" />
+  <meta property="og:image" content="https://marketplaceke.co.ke/images/og-cover.jpg" />
+  <meta property="og:url" content="https://marketplaceke.co.ke/category.html" id="og-url" />
+
+  <!-- Twitter card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Category — Marketplace Ke" id="tw-title" />
+  <meta name="twitter:description" content="Browse listings on Marketplace Ke." id="tw-description" />
+
+  <!-- JSON-LD BreadcrumbList schema (populated dynamically) -->
+  <script type="application/ld+json" id="category-schema"></script>
+
   <link rel="stylesheet" href="/css/style.css" />
   <script>(function(){const t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)})();</script>
   <style>
@@ -38,9 +61,7 @@
       display: flex; align-items: center; gap: 10px;
       font-size: 14px; font-weight: 500; color: var(--text);
     }
-    .subcat-item:hover {
-      background: #fff0e6; color: var(--brand);
-    }
+    .subcat-item:hover { background: #fff0e6; color: var(--brand); }
     .subcat-item svg { flex-shrink: 0; }
 
     .group-title {
@@ -97,239 +118,134 @@
   const categoryId = parseInt(params.get("id"));
   let   currentPage = 1;
   let   activeSub   = null;
+  let   currentCatName = "";
 
-  // Group definitions for Phones & Tablets
+  // ── SEO helpers ──────────────────────────────────────────────────────────────
+  function slugify(text) {
+    return text.toLowerCase().trim()
+      .replace(/\s+/g, "-")
+      .replace(/[^\w-]/g, "");
+  }
+
+  function updateCategoryMeta(cat, subName) {
+    const name         = subName || cat.name;
+    const canonicalUrl = `https://marketplaceke.co.ke/category.html?id=${cat.id}`;
+
+    const pageTitle = `${name} for Sale in Kenya | Marketplace Ke`;
+    const metaDesc  = `Browse ${name} for sale in Kenya. Find new and used ${name.toLowerCase()} from verified sellers near you on Marketplace Ke — Kenya's free online marketplace.`;
+
+    document.title = pageTitle;
+
+    let descTag = document.querySelector('meta[name="description"]');
+    if (descTag) descTag.setAttribute("content", metaDesc);
+
+    const canonicalEl = document.getElementById("canonical-tag");
+    if (canonicalEl) canonicalEl.setAttribute("href", canonicalUrl);
+
+    const ogTitle = document.getElementById("og-title");
+    if (ogTitle) ogTitle.setAttribute("content", pageTitle);
+    const ogDesc = document.getElementById("og-description");
+    if (ogDesc) ogDesc.setAttribute("content", metaDesc);
+    const ogUrl = document.getElementById("og-url");
+    if (ogUrl) ogUrl.setAttribute("content", canonicalUrl);
+
+    const twTitle = document.getElementById("tw-title");
+    if (twTitle) twTitle.setAttribute("content", pageTitle);
+    const twDesc = document.getElementById("tw-description");
+    if (twDesc) twDesc.setAttribute("content", metaDesc);
+
+    // JSON-LD BreadcrumbList
+    const breadcrumb = {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://marketplaceke.co.ke/" },
+        { "@type": "ListItem", "position": 2, "name": cat.name, "item": `https://marketplaceke.co.ke/category.html?id=${cat.id}` },
+        ...(subName ? [{ "@type": "ListItem", "position": 3, "name": subName, "item": canonicalUrl }] : [])
+      ]
+    };
+
+    const schemaEl = document.getElementById("category-schema");
+    if (schemaEl) schemaEl.textContent = JSON.stringify(breadcrumb);
+  }
+
+  // ── Group definitions ─────────────────────────────────────────────────────────
   const groups = {
     "Health & Beauty": [
-      {
-        title: "Facial Skincare",
-        items: ["Moisturizers","Cleansers","Masks","Toners","Sun Care"]
-      },
-      {
-        title: "Hair Care",
-        items: ["Conditioner","Extensions, Wigs & Accessories","Shampoos","Conditioners","Extension wigs & Accessories","Hair tools","Hair Loss Products","Hair Styling Products"]
-      },
-      {
-        title: "Makeup",
-        items: ["Face","Eyes","Lips","Tools & Brushes","Makeup Kits & Combos"]
-      },
-      {
-        title: "Health & Wellness",
-        items: ["Health Supplements","Sports nutrition","Feminine care","Sexual Wellness"]
-      },
-      {
-        title: "Dermacosmetics",
-        items: ["Skin Care","Hair Treatment"]
-      },
-      {
-        title: "Personal Care",
-        items: ["Body Lotions","Roll-ons & Deodrants","Shower Gels","Shave & Hair Removal"]
-      },
-      {
-        title: "Fragrances",
-        items: ["Men's","Women's","Gift sets & combos","Aroma Therapy"]
-      },
-      {
-        title: "Luxury Beauty",
-        items: ["Fragrances","Skincare","Makeup"]
-      },
+      { title: "Facial Skincare", items: ["Moisturizers","Cleansers","Masks","Toners","Sun Care"] },
+      { title: "Hair Care", items: ["Conditioner","Extensions, Wigs & Accessories","Shampoos","Conditioners","Extension wigs & Accessories","Hair tools","Hair Loss Products","Hair Styling Products"] },
+      { title: "Makeup", items: ["Face","Eyes","Lips","Tools & Brushes","Makeup Kits & Combos"] },
+      { title: "Health & Wellness", items: ["Health Supplements","Sports nutrition","Feminine care","Sexual Wellness"] },
+      { title: "Dermacosmetics", items: ["Skin Care","Hair Treatment"] },
+      { title: "Personal Care", items: ["Body Lotions","Roll-ons & Deodrants","Shower Gels","Shave & Hair Removal"] },
+      { title: "Fragrances", items: ["Men's","Women's","Gift sets & combos","Aroma Therapy"] },
+      { title: "Luxury Beauty", items: ["Fragrances","Skincare","Makeup"] },
     ],
     "Appliances": [
-      {
-        title: "Large Appliances",
-        items: ["Refrigerators","Freezers","Water Dispensers & Coolers","Washers & Dryers"]
-      },
-      {
-        title: "Small Appliances",
-        items: ["Blenders","Toasters","Kettles","Ironing & Laundry"]
-      },
-      {
-        title: "Cooking Appliances",
-        items: ["Cooktops","Microwave & Ovens","Cookers","Cooking Appliance Accessories"]
-      },
-      {
-        title: "Best Sellers Appliances Brands",
-        items: ["LG","Midea","Ailyons","Roch","Nunix","Hisense","Ramtons","Von","Vitron","Skyworth"]
-      },
+      { title: "Large Appliances", items: ["Refrigerators","Freezers","Water Dispensers & Coolers","Washers & Dryers"] },
+      { title: "Small Appliances", items: ["Blenders","Toasters","Kettles","Ironing & Laundry"] },
+      { title: "Cooking Appliances", items: ["Cooktops","Microwave & Ovens","Cookers","Cooking Appliance Accessories"] },
+      { title: "Best Sellers Appliances Brands", items: ["LG","Midea","Ailyons","Roch","Nunix","Hisense","Ramtons","Von","Vitron","Skyworth"] },
     ],
     "Phones & Tablets": [
-      {
-        title: "Mobile Phones",
-        items: ["Smartphones","iOS Phones","Feature Phones","Refurbished Phones","Smartphones under 10k","Feature Phones Under 2,000"]
-      },
-      {
-        title: "Accessories",
-        items: ["Bluetooth Headsets","Smart Watches","Cases & Sleeves","Portable Powerbanks","Batteries & Battery Packs","Wall Chargers","Headphones","Tripods","Stands","Virtual Reality Headsets"]
-      },
-      {
-        title: "Tablets",
-        items: ["Tablets","Tablet Accessories","Tablet Bags & Covers"]
-      },
-      {
-        title: "Top Smartphone Brands",
-        items: ["Samsung Phones","Xiaomi Phones","Itel Phones","Tecno Phones","Infinix Phones","Huawei Phones","Oppo Phones"]
-      },
-      {
-        title: "Best Sellers Smartphones",
-        items: ["Samsung","Tecno","Xiaomi","Infinix","Oppo","Vivo","Itel"]
-      },
+      { title: "Mobile Phones", items: ["Smartphones","iOS Phones","Feature Phones","Refurbished Phones","Smartphones under 10k","Feature Phones Under 2,000"] },
+      { title: "Accessories", items: ["Bluetooth Headsets","Smart Watches","Cases & Sleeves","Portable Powerbanks","Batteries & Battery Packs","Wall Chargers","Headphones","Tripods","Stands","Virtual Reality Headsets"] },
+      { title: "Tablets", items: ["Tablets","Tablet Accessories","Tablet Bags & Covers"] },
+      { title: "Top Smartphone Brands", items: ["Samsung Phones","Xiaomi Phones","Itel Phones","Tecno Phones","Infinix Phones","Huawei Phones","Oppo Phones"] },
+      { title: "Best Sellers Smartphones", items: ["Samsung","Tecno","Xiaomi","Infinix","Oppo","Vivo","Itel"] },
     ],
     "TVs & Audio": [
-      {
-        title: "Televisions",
-        items: ["Smart TVs","Digital TVs","Data Projectors"]
-      },
-      {
-        title: "Home Audio",
-        items: ["Home Theater Systems","Sound Bars","Bluetooth Speakers","Woofers"]
-      },
-      {
-        title: "Accessories & Supplies",
-        items: ["Accessories & Video Supplies","TV Stands","Power Protection","Cables","Camera & Photo Accessories","Television Accessories","TVs Receivers"]
-      },
-      {
-        title: "Cameras",
-        items: ["Digital SLR Cameras","Surveillance Cameras","Compact Cameras"]
-      },
-      {
-        title: "Best Seller TV Brands",
-        items: ["Vitron TV","Hikers","Skyworth","Vision Plus","HiSense TV","Amtec","TCL TV","Royal","GLD"]
-      },
+      { title: "Televisions", items: ["Smart TVs","Digital TVs","Data Projectors"] },
+      { title: "Home Audio", items: ["Home Theater Systems","Sound Bars","Bluetooth Speakers","Woofers"] },
+      { title: "Accessories & Supplies", items: ["Accessories & Video Supplies","TV Stands","Power Protection","Cables","Camera & Photo Accessories","Television Accessories","TVs Receivers"] },
+      { title: "Cameras", items: ["Digital SLR Cameras","Surveillance Cameras","Compact Cameras"] },
+      { title: "Best Seller TV Brands", items: ["Vitron TV","Hikers","Skyworth","Vision Plus","HiSense TV","Amtec","TCL TV","Royal","GLD"] },
     ],
     "Home & Office": [
-      {
-        title: "Kitchen & Dining",
-        items: ["Water Dispensers","Kitchen Utensils","Cookware","Kitchen Storage","Cutlery","Shelves & Racks","Flasks & Bottles"]
-      },
-      {
-        title: "Bedding",
-        items: ["Pillows","Duvets","Mosquito Nets","Mattresses","Bedding Accessories","Sheets & Pillow Cases","Decorative Pillows"]
-      },
-      {
-        title: "Lighting & Outdoor",
-        items: ["Solar Panels","Portable Power","Lamps & Shades","Decorative Lights","Ceiling Lights","Outdoor Lighting"]
-      },
-      {
-        title: "Home Decor",
-        items: ["Rugs & Carpets","Wall Art","Door Mats","Artificial Plants","Clocks","Mirrors","Furniture"]
-      },
-      {
-        title: "Home Organization",
-        items: ["Wardrobes","Shoe Racks","Bathroom Storage","Laundry Storage","Racks & Shelves","Baskets, Bins & Containers"]
-      },
-      {
-        title: "Top Brands",
-        items: ["Sundabest","Nunix","Rashnik","NiceOne","Ecoa","Ailyons"]
-      },
+      { title: "Kitchen & Dining", items: ["Water Dispensers","Kitchen Utensils","Cookware","Kitchen Storage","Cutlery","Shelves & Racks","Flasks & Bottles"] },
+      { title: "Bedding", items: ["Pillows","Duvets","Mosquito Nets","Mattresses","Bedding Accessories","Sheets & Pillow Cases","Decorative Pillows"] },
+      { title: "Lighting & Outdoor", items: ["Solar Panels","Portable Power","Lamps & Shades","Decorative Lights","Ceiling Lights","Outdoor Lighting"] },
+      { title: "Home Decor", items: ["Rugs & Carpets","Wall Art","Door Mats","Artificial Plants","Clocks","Mirrors","Furniture"] },
+      { title: "Home Organization", items: ["Wardrobes","Shoe Racks","Bathroom Storage","Laundry Storage","Racks & Shelves","Baskets, Bins & Containers"] },
+      { title: "Top Brands", items: ["Sundabest","Nunix","Rashnik","NiceOne","Ecoa","Ailyons"] },
     ],
     "Fashion": [
-      {
-        title: "Men's Clothing",
-        items: ["Shirts","Suits & Sports Coats","Jeans","Underwear","T-Shirts & Tanks","Pants","Shorts"]
-      },
-      {
-        title: "Women's Clothing",
-        items: ["Dresses","Suits & Blazers","Tops & Trees","Coats, Jackets & Vests","Jumpsuits, Rompers & Overalls","Skirts","Lingerie, Sleep & Lounge", "Jeans", "Shorts"]
-      },
-      {
-        title: "Kid's Clothing",
-        items: ["Boys","Girls"]
-      },
-      {
-        title: "Men's Shoes",
-        items: ["Fashion Sneakers","Loafers & Slip Ons"]
-      },
-      {
-        title: "Women's Shoes",
-        items: ["Flats", "Sandals"]
-      },
-      {
-        title: "Men's Accessories",
-        items: ["Watches","Belts"]
-      },
-      {
-        title: "Women's Accessories",
-        items: ["Jewerly","Handbangs & Wallets",]
-      },
+      { title: "Men's Clothing", items: ["Shirts","Suits & Sports Coats","Jeans","Underwear","T-Shirts & Tanks","Pants","Shorts"] },
+      { title: "Women's Clothing", items: ["Dresses","Suits & Blazers","Tops & Trees","Coats, Jackets & Vests","Jumpsuits, Rompers & Overalls","Skirts","Lingerie, Sleep & Lounge","Jeans","Shorts"] },
+      { title: "Kid's Clothing", items: ["Boys","Girls"] },
+      { title: "Men's Shoes", items: ["Fashion Sneakers","Loafers & Slip Ons"] },
+      { title: "Women's Shoes", items: ["Flats","Sandals"] },
+      { title: "Men's Accessories", items: ["Watches","Belts"] },
+      { title: "Women's Accessories", items: ["Jewerly","Handbangs & Wallets"] },
     ],
     "Computing": [
-      {
-        title: "Laptops",
-        items: ["Netbooks","Notebooks","Ultrabooks"]
-      },
-      {
-        title: "Computer Data Storage",
-        items: ["External Hard Drives", "USB Flash Drives"]
-      },
-      {
-        title: "Laptop Brands",
-        items: ["HP Laptops","Dell Laptops","Lenovo Laptops","Apple Laptops","Asus Laptops"]
-      },
-      {
-        title: "Computers & Accessories",
-        items: ["Desktops","Monitors","Laptop Accessories","Scanners", "Printers", "Keyboards & Mice", "Computer Cable", "Laptop Bags"]
-      },
-      {
-        title: "Computer Components",
-        items: ["Internal Hard Drive","Graphic Cards", "Fans & Cooling", "CPU Processors"]
-      },
-      {
-        title: "Refurb Corner",
-        items: ["Refurbished Laptops"]
-      },
+      { title: "Laptops", items: ["Netbooks","Notebooks","Ultrabooks"] },
+      { title: "Computer Data Storage", items: ["External Hard Drives","USB Flash Drives"] },
+      { title: "Laptop Brands", items: ["HP Laptops","Dell Laptops","Lenovo Laptops","Apple Laptops","Asus Laptops"] },
+      { title: "Computers & Accessories", items: ["Desktops","Monitors","Laptop Accessories","Scanners","Printers","Keyboards & Mice","Computer Cable","Laptop Bags"] },
+      { title: "Computer Components", items: ["Internal Hard Drive","Graphic Cards","Fans & Cooling","CPU Processors"] },
+      { title: "Refurb Corner", items: ["Refurbished Laptops"] },
     ],
     "Gaming": [
-      {
-        title: "Playstation",
-        items: ["Playstation 5","Playstation 4","Playstation 3","PS Vita"]
-      },
-      {
-        title: "Nintendo",
-        items: ["Nintendo DS","Nintendo 3DS","Nintendo Switch","Wii"]
-      },
-      {
-        title: "PC Gaming",
-        items: ["Games"]
-      },
+      { title: "Playstation", items: ["Playstation 5","Playstation 4","Playstation 3","PS Vita"] },
+      { title: "Nintendo", items: ["Nintendo DS","Nintendo 3DS","Nintendo Switch","Wii"] },
+      { title: "PC Gaming", items: ["Games"] },
     ],
     "Supermarket": [
-      {
-        title: "Drinks",
-        items: ["Beer, Wines & Spirits","Carbonated Drinks","Dairy","Water", "Juice & Non Carbonated Drinks"]
-      },
-      {
-        title: "Household Supplies",
-        items: ["Air Fresheners","Bathroom Cleaners","Bulb & Batteries","Floor Cleaners","Kitchen Cleaners","Laundry","Paper & Rolls", "Household Cleaners & Sundries"]
-      },
+      { title: "Drinks", items: ["Beer, Wines & Spirits","Carbonated Drinks","Dairy","Water","Juice & Non Carbonated Drinks"] },
+      { title: "Household Supplies", items: ["Air Fresheners","Bathroom Cleaners","Bulb & Batteries","Floor Cleaners","Kitchen Cleaners","Laundry","Paper & Rolls","Household Cleaners & Sundries"] },
     ],
     "Baby Products": [
-      {
-        title: "Feeding",
-        items: ["Pacifiers & Accessories","Bottle-Feeding Equipments","Solid Feeding"]
-      },
-      {
-        title: "Diapering",
-        items: ["Diaper Bags","Disposable Diapers","Portbale Changing Pads","Cloth Diapers","Changing Tables","Wipers & Holders"]
-      },
-      {
-        title: "Gear",
-        items: ["Walkers","Bagpacks & Carriers","Swings, Jumpers & Bouncers,"]
-      },
-      {
-        title: "Baby Safety",
-        items: ["Monitors","Sleep Positioners", "Edge & Corner Guards"]
-      },
-      {
-        title: "Baby & Toddler Toys",
-        items: ["Building Toys","Toy Gift Sets","Bath Toys",]
-      },
-      {
-        title: "Sleeping And Nursery",
-        items: ["Baby Beds","Baby Bedding","Nursery Beds","Baby Mattresses"]
-      },
+      { title: "Feeding", items: ["Pacifiers & Accessories","Bottle-Feeding Equipments","Solid Feeding"] },
+      { title: "Diapering", items: ["Diaper Bags","Disposable Diapers","Portbale Changing Pads","Cloth Diapers","Changing Tables","Wipers & Holders"] },
+      { title: "Gear", items: ["Walkers","Bagpacks & Carriers","Swings, Jumpers & Bouncers,"] },
+      { title: "Baby Safety", items: ["Monitors","Sleep Positioners","Edge & Corner Guards"] },
+      { title: "Baby & Toddler Toys", items: ["Building Toys","Toy Gift Sets","Bath Toys"] },
+      { title: "Sleeping And Nursery", items: ["Baby Beds","Baby Bedding","Nursery Beds","Baby Mattresses"] },
     ],
   };
 
+  // ── Page init ─────────────────────────────────────────────────────────────────
   window.addEventListener("DOMContentLoaded", async () => {
     updateNav();
     if (!categoryId) { window.location.href = "/"; return; }
@@ -339,18 +255,21 @@
 
   async function loadCategory() {
     try {
-      const cats    = await api.getCategories();
-      const cat     = cats.find(c => c.id === categoryId);
+      const cats = await api.getCategories();
+      const cat  = cats.find(c => c.id === categoryId);
       if (!cat) { window.location.href = "/"; return; }
 
-      document.title = `${cat.name} — Marketplace Ke`;
+      currentCatName = cat.name;
+
+      // Apply SEO meta for this category
+      updateCategoryMeta(cat, null);
+
       document.getElementById("hero-title").textContent = cat.name;
       document.getElementById("hero-desc").textContent  =
         `Browse all ${cat.name} listings on Marketplace Ke`;
       document.getElementById("hero-icon").innerHTML    =
         `<div style="color:#fff">${lucideIcon(cat.icon, 36)}</div>`;
 
-      // Render subcategories
       const subcatsEl = document.getElementById("subcats-section");
       const catGroups = groups[cat.name];
 
@@ -369,7 +288,6 @@
             </div>`;
         }).join("");
       } else if (cat.children?.length) {
-        // Generic grid for categories without group definitions
         subcatsEl.innerHTML = `
           <div class="group-title">All Subcategories</div>
           <div class="subcats-grid">
@@ -391,7 +309,10 @@
     document.getElementById("listings-title").textContent = name;
     loadListings();
     document.getElementById("listings-section")?.scrollIntoView({ behavior: "smooth" });
-    // Highlight active subcat
+
+    // Update meta to reflect the active subcategory
+    updateCategoryMeta({ id: categoryId, name: currentCatName }, name);
+
     document.querySelectorAll(".subcat-item").forEach(el => {
       el.style.background = "";
       el.style.color = "";
@@ -427,7 +348,7 @@
 
       grid.innerHTML = listings.map(l => {
         const img   = l.images?.length
-          ? `<img src="${l.images[0]}" alt="${l.title}" loading="lazy" />`
+          ? `<img src="${l.images[0]}" alt="${l.title} for sale in Kenya" loading="lazy" />`
           : `<span>${l.category_icon || "📦"}</span>`;
         const badge = l.condition === "new" ? "badge-new" : "badge-used";
         return `
@@ -495,18 +416,20 @@
         <a href="/register.html">Register</a>
       </div>
       <div class="footer-col">
-        <h4>Categories</h4>
-        <a href="/?cat=Phones%20%26%20Tablets">Phones & Tablets</a>
-        <a href="/?cat=Electronics">Electronics</a>
-        <a href="/?cat=Computing">Computing</a>
-        <a href="/?cat=Fashion">Fashion</a>
-        <a href="/?cat=Home%20%26%20Office">Home & Office</a>
-        <a href="/?cat=Appliances">Appliances</a>
-        <a href="/?cat=Gaming">Gaming</a>
-        <a href="/?cat=Baby%20Products">Baby Products</a>
-        <a href="/?cat=Health%20%26%20Beauty">Health & Beauty</a>
-        <a href="/?cat=Supermarket">Supermarket</a>
-      </div>
+        <!-- Categories -->
+<div class="footer-col">
+  <h4>Categories</h4>
+  <a href="/?cat=Phones%20%26%20Tablets">Phones & Tablets</a>
+  <a href="/?cat=TVs%20%26%20Audio">TVs & Audio</a>
+  <a href="/?cat=Appliances">Appliances</a>
+  <a href="/?cat=Health%20%26%20Beauty">Health & Beauty</a>
+  <a href="/?cat=Home%20%26%20Office">Home & Office</a>
+  <a href="/?cat=Fashion">Fashion</a>
+  <a href="/?cat=Computing">Computing</a>
+  <a href="/?cat=Gaming">Gaming</a>
+  <a href="/?cat=Supermarket">Supermarket</a>
+  <a href="/?cat=Baby%20Products">Baby Products</a>
+</div>
       <div class="footer-col">
         <h4>Help</h4>
         <a href="/safety-tips.html">Safety Tips</a>

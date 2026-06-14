@@ -7,9 +7,33 @@
     const t = localStorage.getItem("theme");
     if (t) document.documentElement.setAttribute("data-theme", t);
   })();
-</script>
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Listing — Marketplace Ke</title>
+
+  <!-- SEO: default title & meta (overwritten dynamically once listing loads) -->
+  <title>Listing — Marketplace Ke | Buy &amp; Sell in Kenya</title>
+  <meta name="description" content="Browse listings on Marketplace Ke — Kenya's free peer-to-peer marketplace for new and used items." />
+  <meta name="robots" content="index, follow" />
+  <meta name="author" content="Marketplace Ke" />
+  <link rel="canonical" href="https://marketplaceke.co.ke/listing.html" id="canonical-tag" />
+
+  <!-- Open Graph (WhatsApp / Facebook previews) -->
+  <meta property="og:type" content="product" />
+  <meta property="og:site_name" content="Marketplace Ke" />
+  <meta property="og:title" content="Listing — Marketplace Ke" id="og-title" />
+  <meta property="og:description" content="Browse listings on Marketplace Ke — Kenya's free peer-to-peer marketplace." id="og-description" />
+  <meta property="og:image" content="https://marketplaceke.co.ke/images/og-cover.jpg" id="og-image" />
+  <meta property="og:url" content="https://marketplaceke.co.ke/listing.html" id="og-url" />
+
+  <!-- Twitter card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Listing — Marketplace Ke" id="tw-title" />
+  <meta name="twitter:description" content="Browse listings on Marketplace Ke." id="tw-description" />
+  <meta name="twitter:image" content="https://marketplaceke.co.ke/images/og-cover.jpg" id="tw-image" />
+
+  <!-- JSON-LD Product Schema (populated dynamically) -->
+  <script type="application/ld+json" id="listing-schema"></script>
+
   <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body>
@@ -49,6 +73,81 @@
   const id = new URLSearchParams(location.search).get("id");
   let l = null;
 
+  // ── SEO helpers ──────────────────────────────────────────────────────────────
+  function slugify(text) {
+    return text.toLowerCase().trim()
+      .replace(/\s+/g, "-")
+      .replace(/[^\w-]/g, "");
+  }
+
+  function setMeta(tag, attr, val) {
+    const el = document.getElementById(tag);
+    if (el) el.setAttribute(attr, val);
+  }
+
+  function updateListingMeta(listing) {
+    const canonicalUrl = `https://marketplaceke.co.ke/listing.html?id=${listing.id}`;
+    const price        = Number(listing.price).toLocaleString("en-KE");
+    const shortDesc    = listing.description
+      ? listing.description.slice(0, 120).replace(/\n/g, " ") + (listing.description.length > 120 ? "…" : "")
+      : "";
+    const condition  = listing.condition === "new" ? "New" : "Used";
+    const firstImage = listing.images?.[0] || "https://marketplaceke.co.ke/images/og-cover.jpg";
+
+    const pageTitle = `${listing.title} for Sale in ${listing.location} | Marketplace Ke`;
+    const metaDesc  = `Buy ${listing.title} (${condition}) in ${listing.location}, Kenya for KES ${price}. ${shortDesc} Contact the seller on Marketplace Ke.`;
+
+    // <title> & <meta description>
+    document.title = pageTitle;
+    let descTag = document.querySelector('meta[name="description"]');
+    if (descTag) descTag.setAttribute("content", metaDesc);
+
+    // Canonical
+    const canonicalEl = document.getElementById("canonical-tag");
+    if (canonicalEl) canonicalEl.setAttribute("href", canonicalUrl);
+
+    // Open Graph
+    setMeta("og-title",       "content", pageTitle);
+    setMeta("og-description", "content", metaDesc);
+    setMeta("og-image",       "content", firstImage);
+    setMeta("og-url",         "content", canonicalUrl);
+
+    // Twitter
+    setMeta("tw-title",       "content", pageTitle);
+    setMeta("tw-description", "content", metaDesc);
+    setMeta("tw-image",       "content", firstImage);
+
+    // JSON-LD Product schema
+    const schema = {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      "name": listing.title,
+      "description": listing.description || "",
+      "image": listing.images || [],
+      "url": canonicalUrl,
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "KES",
+        "price": listing.price,
+        "availability": listing.status === "sold"
+          ? "https://schema.org/SoldOut"
+          : "https://schema.org/InStock",
+        "itemCondition": listing.condition === "new"
+          ? "https://schema.org/NewCondition"
+          : "https://schema.org/UsedCondition",
+        "seller": {
+          "@type": "Person",
+          "name": listing.seller_name || "Seller"
+        }
+      },
+      "category": listing.category_name || ""
+    };
+
+    const schemaEl = document.getElementById("listing-schema");
+    if (schemaEl) schemaEl.textContent = JSON.stringify(schema);
+  }
+
+  // ── Page init ────────────────────────────────────────────────────────────────
   window.addEventListener("DOMContentLoaded", async () => {
     updateNav();
     if (!id) { window.location.href = "/"; return; }
@@ -65,11 +164,11 @@
     const gallery = imgs.length
       ? `<div class="gallery-main"><img id="main-img" src="${imgs[0]}" alt="${l.title}" /></div>
          <div class="gallery-thumbs">
-           ${imgs.map((src, i) => `<img src="${src}" class="${i===0?'active':''}" onclick="switchImg(this,'${src}')" />`).join("")}
+           ${imgs.map((src, i) => `<img src="${src}" alt="${l.title} photo ${i+1}" class="${i===0?'active':''}" onclick="switchImg(this,'${src}')" />`).join("")}
          </div>`
       : `<div class="gallery-main">${l.category_icon || "📦"}</div>`;
 
-    const isPromoted  = l.is_promoted && (!l.promoted_until || new Date(l.promoted_until) > new Date());
+    const isPromoted = l.is_promoted && (!l.promoted_until || new Date(l.promoted_until) > new Date());
     const ownerActions = isOwner ? `
       <div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap">
         ${l.status === "active"
@@ -131,7 +230,7 @@
             </button>
           </div>
           <div style="background:var(--bg);border-radius:var(--radius);padding:16px;margin-bottom:12px">
-            <h3 style="font-size:15px;margin-bottom:8px">Description</h3>
+            <h2 style="font-size:15px;margin-bottom:8px">Description</h2>
             <p style="font-size:14px;white-space:pre-line">${l.description}</p>
           </div>
           ${l.reason ? `
@@ -161,7 +260,6 @@
             </div>
             ${contactSection}
             ${ownerActions}
-            <!-- Reports button always here, hidden by default, shown by loadListing -->
             <button id="view-reports-btn"
                     class="btn btn-ghost btn-full"
                     style="display:none;color:#b45309;border-color:#b45309;font-size:13px;margin-top:8px"
@@ -204,6 +302,7 @@
     c.appendChild(t);
     setTimeout(() => t.remove(), 3500);
   }
+
   async function messageseller() {
     if (!getUser()) { window.location.href = "/login.html"; return; }
     try {
@@ -215,10 +314,9 @@
     } catch (e) { toast(e.message, "error"); }
   }
 
-  // ── Report modal ────────────────────────────────────────────────────────────
+  // ── Report modal ─────────────────────────────────────────────────────────────
   function showReportModal() {
     if (!getUser()) { window.location.href = "/login.html"; return; }
-
     const modal = document.createElement("div");
     modal.className = "modal-overlay";
     modal.id = "report-modal";
@@ -226,7 +324,6 @@
       <div class="modal">
         <h3>🚩 Report Listing</h3>
         <p>Help us keep Marketplace Ke safe. Tell us what's wrong with this listing.</p>
-
         <div class="form-group">
           <label style="font-size:14px;font-weight:500;margin-bottom:6px;display:block">Reason *</label>
           <select id="report-reason" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:var(--radius);font-size:14px;outline:none;background:var(--bg)">
@@ -241,7 +338,6 @@
             <option value="other">Other</option>
           </select>
         </div>
-
         <div class="form-group">
           <label style="font-size:14px;font-weight:500;margin-bottom:6px;display:block">
             Additional details <span style="color:var(--muted);font-weight:400">(optional)</span>
@@ -252,13 +348,11 @@
                    border-radius:var(--radius);font-size:14px;outline:none;
                    background:var(--bg);min-height:80px;resize:vertical"></textarea>
         </div>
-
         <div class="modal-footer">
           <button class="btn btn-ghost" onclick="closeReportModal()">Cancel</button>
           <button class="btn btn-primary" id="submit-report-btn" onclick="submitReport()">Submit Report</button>
         </div>
       </div>`;
-
     document.body.appendChild(modal);
     modal.addEventListener("click", e => { if (e.target === modal) closeReportModal(); });
   }
@@ -270,10 +364,12 @@
 
   async function loadListing() {
     try {
-      const l = await api.getListing(id);
-      document.title = `${l.title} — Marketplace Ke`;
-      render(l);
-      // Record this view if logged in
+      const listing = await api.getListing(id);
+
+      // ── Apply all SEO meta from real listing data ──────────────────────────
+      updateListingMeta(listing);
+
+      render(listing);
       if (isLoggedIn()) api.recordView(id).catch(() => {});
     } catch (e) {
       document.getElementById("listing-content").innerHTML =
@@ -281,7 +377,6 @@
       return;
     }
 
-    // Reports check
     try {
       const result = await fetch(`/api/reports/listing/${id}`);
       const { count } = await result.json();
@@ -292,10 +387,8 @@
       }
     } catch {}
 
-    // Check if saved
     checkIfSaved();
 
-    // Related listings
     try {
       const related = await api.getRelatedListings(id);
       if (related.length) {
@@ -309,11 +402,8 @@
     const reason  = document.getElementById("report-reason").value;
     const details = document.getElementById("report-details").value.trim();
     const btn     = document.getElementById("submit-report-btn");
-
     if (!reason) { toast("Please select a reason", "error"); return; }
-
     btn.disabled = true; btn.textContent = "Submitting…";
-
     try {
       await api.submitReport({ listing_id: l.id, reason, details });
       closeReportModal();
@@ -323,32 +413,28 @@
       btn.disabled = false; btn.textContent = "Submit Report";
     }
   }
-  
+
   async function viewReports() {
     try {
       const { count, reports } = await api.getListingReports(id);
-
       const modal = document.createElement("div");
       modal.className = "modal-overlay";
       modal.id = "reports-view-modal";
-
       const reasonLabels = {
-        scam:          "Scam or fraud",
-        fake:          "Fake or counterfeit item",
-        wrong_category:"Wrong category",
-        prohibited:    "Prohibited item",
-        misleading:    "Misleading description or photos",
-        spam:          "Spam or duplicate listing",
-        offensive:     "Offensive content",
-        other:         "Other",
+        scam:           "Scam or fraud",
+        fake:           "Fake or counterfeit item",
+        wrong_category: "Wrong category",
+        prohibited:     "Prohibited item",
+        misleading:     "Misleading description or photos",
+        spam:           "Spam or duplicate listing",
+        offensive:      "Offensive content",
+        other:          "Other",
       };
-
       modal.innerHTML = `
         <div class="modal" style="max-width:520px">
           <h3>⚠️ Reports for this listing</h3>
-          <p>This listing has been reported <strong>${count}</strong> time${count !== 1 ? "s" : ""}. 
+          <p>This listing has been reported <strong>${count}</strong> time${count !== 1 ? "s" : ""}.
              Use this information to make an informed decision.</p>
-
           <div style="display:flex;flex-direction:column;gap:10px;max-height:320px;overflow-y:auto">
             ${reports.map(r => `
               <div style="background:var(--bg);border-radius:var(--radius);padding:14px 16px;border:1px solid var(--border)">
@@ -366,29 +452,22 @@
                 </div>
               </div>`).join("")}
           </div>
-
           <div class="modal-footer">
             <button class="btn btn-ghost" onclick="document.getElementById('reports-view-modal').remove()">Close</button>
             <a href="/safety-tips.html" class="btn btn-primary">View Safety Tips</a>
           </div>
         </div>`;
-
       document.body.appendChild(modal);
-      modal.addEventListener("click", e => {
-        if (e.target === modal) modal.remove();
-      });
-    } catch (e) {
-      toast(e.message, "error");
-    }
+      modal.addEventListener("click", e => { if (e.target === modal) modal.remove(); });
+    } catch (e) { toast(e.message, "error"); }
   }
-  
-  // ── Share listing ───────────────────────────────────────────────────────────
+
+  // ── Share listing ─────────────────────────────────────────────────────────────
   function shareListng() {
     const url   = window.location.href;
     const title = l.title;
     const price = formatPrice(l.price);
     const text  = `Check out this listing on Marketplace Ke: ${title} — ${price}`;
-
     const modal = document.createElement("div");
     modal.className = "modal-overlay";
     modal.id = "share-modal";
@@ -396,96 +475,58 @@
       <div class="modal" style="max-width:400px">
         <h3 style="margin-bottom:4px">🔗 Share Listing</h3>
         <p style="margin-bottom:20px">${title}</p>
-
         <div style="display:flex;flex-direction:column;gap:10px">
-
-          <!-- WhatsApp -->
           <div class="share-option" onclick="shareWhatsApp('${encodeURIComponent(text + ' ' + url)}')">
             <span class="share-icon">💬</span>
-            <div class="share-label">
-              Share on WhatsApp
-              <div class="share-sub">Send to a contact or group</div>
-            </div>
+            <div class="share-label">Share on WhatsApp<div class="share-sub">Send to a contact or group</div></div>
             <span style="color:var(--muted);font-size:12px">→</span>
           </div>
-
-          <!-- Copy link -->
           <div class="share-option" id="copy-btn" onclick="copyLink('${url}')">
             <span class="share-icon">📋</span>
-            <div class="share-label">
-              Copy Link
-              <div class="share-sub">${url}</div>
-            </div>
+            <div class="share-label">Copy Link<div class="share-sub">${url}</div></div>
             <span style="color:var(--muted);font-size:12px">→</span>
           </div>
-
-          <!-- Native share (mobile) -->
           ${navigator.share ? `
           <div class="share-option" onclick="nativeShare('${encodeURIComponent(title)}', '${encodeURIComponent(text)}', '${encodeURIComponent(url)}')">
             <span class="share-icon">📤</span>
-            <div class="share-label">
-              More options
-              <div class="share-sub">Share via other apps</div>
-            </div>
+            <div class="share-label">More options<div class="share-sub">Share via other apps</div></div>
             <span style="color:var(--muted);font-size:12px">→</span>
           </div>` : ""}
-
-          <!-- SMS -->
           <div class="share-option" onclick="shareSMS('${encodeURIComponent(text + ' ' + url)}')">
             <span class="share-icon">📱</span>
-            <div class="share-label">
-              Share via SMS
-              <div class="share-sub">Send as a text message</div>
-            </div>
+            <div class="share-label">Share via SMS<div class="share-sub">Send as a text message</div></div>
             <span style="color:var(--muted);font-size:12px">→</span>
           </div>
-
-          <!-- Email -->
           <div class="share-option" onclick="shareEmail('${encodeURIComponent(title)}', '${encodeURIComponent(text + '\n\n' + url)}')">
             <span class="share-icon">📧</span>
-            <div class="share-label">
-              Share via Email
-              <div class="share-sub">Send to someone's inbox</div>
-            </div>
+            <div class="share-label">Share via Email<div class="share-sub">Send to someone's inbox</div></div>
             <span style="color:var(--muted);font-size:12px">→</span>
           </div>
-
         </div>
-
         <div class="modal-footer" style="margin-top:20px">
           <button class="btn btn-ghost" onclick="document.getElementById('share-modal').remove()">Close</button>
         </div>
       </div>`;
-
     document.body.appendChild(modal);
     modal.addEventListener("click", e => { if (e.target === modal) modal.remove(); });
   }
 
-  function shareWhatsApp(encodedText) {
-    window.open(`https://wa.me/?text=${encodedText}`, "_blank");
-  }
+  function shareWhatsApp(encodedText) { window.open(`https://wa.me/?text=${encodedText}`, "_blank"); }
 
   async function copyLink(url) {
     try {
       await navigator.clipboard.writeText(url);
       const btn = document.getElementById("copy-btn");
       btn.classList.add("copy-success");
-      btn.querySelector(".share-label").innerHTML = `
-        Link copied!
-        <div class="share-sub">Paste it anywhere to share</div>`;
+      btn.querySelector(".share-label").innerHTML = `Link copied!<div class="share-sub">Paste it anywhere to share</div>`;
       setTimeout(() => {
         btn.classList.remove("copy-success");
-        btn.querySelector(".share-label").innerHTML = `
-          Copy Link
-          <div class="share-sub">${url}</div>`;
+        btn.querySelector(".share-label").innerHTML = `Copy Link<div class="share-sub">${url}</div>`;
       }, 2500);
     } catch {
-      // Fallback for browsers that block clipboard
       const input = document.createElement("input");
-      input.value = url;
-      document.body.appendChild(input);
-      input.select();
-      document.execCommand("copy");
+      input.value = url; document.body.appendChild(input);
+      input.select(); document.execCommand("copy");
       document.body.removeChild(input);
       toast("Link copied!", "success");
     }
@@ -493,24 +534,16 @@
 
   async function nativeShare(title, text, url) {
     try {
-      await navigator.share({
-        title: decodeURIComponent(title),
-        text:  decodeURIComponent(text),
-        url:   decodeURIComponent(url),
-      });
+      await navigator.share({ title: decodeURIComponent(title), text: decodeURIComponent(text), url: decodeURIComponent(url) });
     } catch {}
   }
 
-  function shareSMS(encodedText) {
-    window.open(`sms:?body=${encodedText}`, "_blank");
-  }
-
+  function shareSMS(encodedText) { window.open(`sms:?body=${encodedText}`, "_blank"); }
   function shareEmail(encodedTitle, encodedBody) {
-    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&su=${encodedTitle}&body=${encodedBody}`;
-    window.open(gmailUrl, "_blank");
+    window.open(`https://mail.google.com/mail/?view=cm&fs=1&su=${encodedTitle}&body=${encodedBody}`, "_blank");
   }
 
-// ── Related listings card ───────────────────────────────────────────────────
+  // ── Related listings card ─────────────────────────────────────────────────────
   function relatedCard(item) {
     const img   = item.images?.length
       ? `<img src="${item.images[0]}" alt="${item.title}" loading="lazy" />`
@@ -534,7 +567,8 @@
       </div>`;
   }
 
-async function promoteListng() {
+  // ── Promote listing ───────────────────────────────────────────────────────────
+  async function promoteListng() {
     const modal = document.createElement("div");
     modal.className = "modal-overlay";
     modal.id = "promote-modal";
@@ -542,7 +576,6 @@ async function promoteListng() {
       <div class="modal" style="max-width:420px">
         <h3>⭐ Promote Your Listing</h3>
         <p>Promoted listings appear at the top of search results and category pages with a Featured badge for <strong>7 days</strong>.</p>
-
         <div style="background:#fff8f0;border:1px solid #ffd4b3;border-radius:var(--radius);padding:16px;margin:16px 0">
           <div style="font-weight:600;margin-bottom:8px">What you get:</div>
           <div style="font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:6px">
@@ -552,19 +585,14 @@ async function promoteListng() {
             <span>✅ More visibility = more buyers</span>
           </div>
         </div>
-
         <div style="text-align:center;font-size:13px;color:var(--muted);margin-bottom:16px">
           This feature is currently <strong style="color:var(--success)">free</strong> during our beta period!
         </div>
-
         <div class="modal-footer">
           <button class="btn btn-ghost" onclick="document.getElementById('promote-modal').remove()">Cancel</button>
-          <button class="btn btn-primary" id="confirm-promote-btn" onclick="confirmPromote()">
-            ⭐ Promote for Free
-          </button>
+          <button class="btn btn-primary" id="confirm-promote-btn" onclick="confirmPromote()">⭐ Promote for Free</button>
         </div>
       </div>`;
-
     document.body.appendChild(modal);
     modal.addEventListener("click", e => { if (e.target === modal) modal.remove(); });
   }
@@ -583,7 +611,8 @@ async function promoteListng() {
     }
   }
 
-let isSavedListing = false;
+  // ── Save / unsave ─────────────────────────────────────────────────────────────
+  let isSavedListing = false;
 
   async function checkIfSaved() {
     if (!getUser() || !l) return;
@@ -619,19 +648,15 @@ let isSavedListing = false;
       updateDetailHeart();
     } catch (e) { toast(e.message, "error"); }
   }
-
 </script>
+
 <footer class="footer">
   <div class="footer-inner">
     <div class="footer-grid">
-
-      <!-- Brand -->
       <div class="footer-brand">
         <div class="logo">Marketplace Ke</div>
         <p>Kenya's free online marketplace. Buy and sell anything — electronics, vehicles, fashion, and more.</p>
       </div>
-
-      <!-- Quick links -->
       <div class="footer-col">
         <h4>Quick Links</h4>
         <a href="/">Home</a>
@@ -639,23 +664,21 @@ let isSavedListing = false;
         <a href="/login.html">Login</a>
         <a href="/register.html">Register</a>
       </div>
-
-      <!-- Categories -->
       <div class="footer-col">
-        <h4>Categories</h4>
-        <a href="/?cat=Phones">Phones</a>
-        <a href="/?cat=Electronics">Electronics</a>
-        <a href="/?cat=Vehicles">Vehicles</a>
-        <a href="/?cat=Fashion">Fashion</a>
-        <a href="/?cat=Home%20%26%20Garden">Home & Garden</a>
-        <a href="/?cat=Sports%20%26%20Leisure">Sports & Leisure</a>
-        <a href="/?cat=Jobs">Jobs</a>
-        <a href="/?cat=Kids%20%26%20Baby">Kids & Baby</a>
-        <a href="/?cat=Animals%20%26%20Pets">Animals & Pets</a>
-        <a href="/?cat=Services">Services</a>
-      </div>
-
-      <!-- Help -->
+        <!-- Categories -->
+<div class="footer-col">
+  <h4>Categories</h4>
+  <a href="/?cat=Phones%20%26%20Tablets">Phones & Tablets</a>
+  <a href="/?cat=TVs%20%26%20Audio">TVs & Audio</a>
+  <a href="/?cat=Appliances">Appliances</a>
+  <a href="/?cat=Health%20%26%20Beauty">Health & Beauty</a>
+  <a href="/?cat=Home%20%26%20Office">Home & Office</a>
+  <a href="/?cat=Fashion">Fashion</a>
+  <a href="/?cat=Computing">Computing</a>
+  <a href="/?cat=Gaming">Gaming</a>
+  <a href="/?cat=Supermarket">Supermarket</a>
+  <a href="/?cat=Baby%20Products">Baby Products</a>
+</div>
       <div class="footer-col">
         <h4>Help</h4>
         <a href="/safety-tips.html">Safety Tips</a>
@@ -664,10 +687,7 @@ let isSavedListing = false;
         <a href="/privacy-policy.html">Privacy Policy</a>
         <a href="/terms.html">Terms of Use</a>
       </div>
-
     </div>
-
-    <!-- Bottom bar -->
     <div class="footer-bottom">
       <p>© 2026 Marketplace Ke. All rights reserved.</p>
       <div></div>
