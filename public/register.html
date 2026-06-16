@@ -91,7 +91,9 @@
     document.getElementById("error-msg").style.display = "none";
     if (!name || !email || !password) { showError("Please fill in all required fields."); return; }
 
-    btn.disabled = true; btn.textContent = "Creating account…";
+    btn.disabled = true;
+    btn.innerHTML = `<span class="btn-spinner"></span> Creating account…`;
+    showSpinner();
     try {
       const { token, user } = await api.register({ name, email, phone, password });
       saveAuth(token, user);

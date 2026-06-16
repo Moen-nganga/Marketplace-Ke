@@ -119,7 +119,9 @@
     document.getElementById("error-msg").style.display = "none";
     if (!email || !password) { showError("Please fill in all fields."); return; }
 
-    btn.disabled = true; btn.textContent = "Logging in…";
+    btn.disabled = true;
+    btn.innerHTML = `<span class="btn-spinner"></span> Logging in…`;
+    showSpinner();
     try {
       const { token, user } = await api.login({ email, password });
       saveAuth(token, user);

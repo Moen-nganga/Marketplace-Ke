@@ -66,15 +66,27 @@ function lucideIcon(name, size = 22) {
 }
 
 async function apiFetch(path, options = {}) {
-  const headers = { ...(options.headers || {}) };
-  if (getToken()) headers["Authorization"] = `Bearer ${getToken()}`;
-  if (!(options.body instanceof FormData))
-    headers["Content-Type"] = "application/json";
+  const token = getToken();
+  showSpinner();
+  try {
+    const res = await fetch(`/api${path}`, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(options.headers || {}),
+      },
+    });
 
-  const res  = await fetch(`/api${path}`, { ...options, headers });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Something went wrong");
-  return data;
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error(err.error || "Request failed");
+    }
+
+    return res.json();
+  } finally {
+    hideSpinner();
+  }
 }
 
 const api = {
@@ -249,6 +261,29 @@ function updateNav() {
       }
     }).catch(() => {});
   }
+}
+
+// ── Global spinner ────────────────────────────────────────────────────────────
+function createSpinner() {
+  if (document.getElementById("spinner-overlay")) return;
+  const el = document.createElement("div");
+  el.className = "spinner-overlay";
+  el.id        = "spinner-overlay";
+  el.innerHTML = `<div class="spinner"></div>`;
+  document.body.appendChild(el);
+}
+
+function showSpinner() {
+  createSpinner();
+  requestAnimationFrame(() => {
+    document.getElementById("spinner-overlay")?.classList.add("active");
+  });
+}
+
+function hideSpinner() {
+  const el = document.getElementById("spinner-overlay");
+  if (!el) return;
+  el.classList.remove("active");
 }
 
 function renderDashboard(user) {
@@ -577,3 +612,18 @@ function updateDarkModeBtn() {
   btn.textContent  = isDark ? "☀️" : "🌙";
   btn.title        = isDark ? "Switch to light mode" : "Switch to dark mode";
 }
+
+// ── Show spinner on page links ────────────────────────────────────────────────
+document.addEventListener("DOMContentLoaded", () => {
+  document.addEventListener("click", e => {
+    const link = e.target.closest("a[href]");
+    if (!link) return;
+    const href = link.getAttribute("href");
+    // Only for internal page links, not # or external
+    if (href && !href.startsWith("#") && !href.startsWith("http") &&
+        !href.startsWith("mailto") && !href.startsWith("tel") &&
+        !href.startsWith("sms") && link.target !== "_blank") {
+      showSpinner();
+    }
+  });
+});

@@ -351,6 +351,55 @@ body footer {
 @media (max-width: 480px) {
   .footer-grid { grid-template-columns: 1fr; }
 }
+/* ── Loading Spinner ─────────────────────────────────────────────────────────── */
+.spinner-overlay {
+  position: fixed; inset: 0;
+  background: rgba(255,255,255,.7);
+  backdrop-filter: blur(2px);
+  z-index: 9999;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity .2s;
+}
+.spinner-overlay.active {
+  opacity: 1; pointer-events: all;
+}
+.spinner {
+  width: 52px; height: 52px;
+  border: 4px solid var(--border);
+  border-top-color: var(--brand);
+  border-right-color: var(--brand);
+  border-radius: 50%;
+  animation: spin .7s cubic-bezier(.4,0,.2,1) infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Dark mode */
+[data-theme="dark"] .spinner-overlay {
+  background: rgba(0,0,0,.6);
+}
+
+/* Inline spinner for buttons */
+.btn-spinner {
+  width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  display: inline-block; vertical-align: middle;
+  margin-right: 6px;
+}
+
+/* Page content fade in */
+.page-content {
+  animation: fadeInUp .3s ease;
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 
 /* ── Modal ───────────────────────────────────────────────────────────────────── */
 .modal-overlay {

@@ -275,7 +275,9 @@
       showError("Please add a reason for selling since the item is used."); return;
     }
 
-    btn.disabled = true; btn.textContent = "Posting…";
+    btn.disabled = true;
+    btn.innerHTML = `<span class="btn-spinner"></span> Posting…`;
+    showSpinner();
 
     const fd = new FormData();
     fd.append("title",       title);
