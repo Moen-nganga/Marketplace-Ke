@@ -57,6 +57,32 @@
       transition: background .15s;
     }
     .preview-remove:hover { background: #dc2626; }
+    .cat-parent-row {
+      padding: 10px 14px 6px;
+      font-weight: 700; font-size: 13px;
+      color: var(--text);
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .cat-child-row {
+      padding: 9px 14px 9px 28px;
+      font-size: 13px; cursor: pointer;
+      color: var(--text);
+      transition: background .15s;
+      border-bottom: 1px solid var(--border);
+    }
+    .cat-child-row:hover { background: #fff0e6; color: var(--brand); }
+    .cat-child-row.selected { background: #fff0e6; color: var(--brand); font-weight: 600; }
+    .cat-see-more {
+      padding: 8px 14px 8px 28px;
+      font-size: 12px; cursor: pointer;
+      color: var(--brand); font-weight: 600;
+      border-bottom: 1px solid var(--border);
+      transition: background .15s;
+    }
+    .cat-see-more:hover { background: #fff0e6; }
   </style>
 </head>
 <body>
@@ -84,9 +110,20 @@
 
     <div class="form-row">
       <div class="form-group">
-        <label>Category *</label>
-        <select id="category"></select>
-      </div>
+          <label>Category *</label>
+          <input type="hidden" id="category" required />
+          <div id="category-picker" style="border:1.5px solid var(--border);border-radius:var(--radius);overflow:hidden">
+            <div id="category-selected" onclick="toggleCategoryPicker()"
+                 style="padding:10px 14px;cursor:pointer;display:flex;align-items:center;
+                        justify-content:space-between;font-size:14px;background:var(--surface)">
+              <span id="category-selected-text" style="color:var(--muted)">Select category</span>
+              <span id="category-arrow">▼</span>
+            </div>
+            <div id="category-dropdown" style="display:none;border-top:1px solid var(--border);max-height:400px;overflow-y:auto">
+              <div id="category-list"></div>
+            </div>
+          </div>
+        </div>
       <div class="form-group">
         <label>Condition *</label>
         <select id="condition" onchange="toggleReason()">
@@ -152,23 +189,10 @@
   window.addEventListener("DOMContentLoaded", async () => {
     if (!isLoggedIn()) { window.location.href = "/login.html"; return; }
     updateNav();
+    await loadCategoryPicker();
 
     // Load categories with subcategories
     // Load categories with subcategories
-    const cats = await api.getCategories();
-    let catOptions = `<option value="">Select category</option>`;
-    cats.forEach(parent => {
-      if (parent.children && parent.children.length) {
-        catOptions += `<optgroup label="${parent.name}">`;
-        parent.children.forEach(child => {
-          catOptions += `<option value="${child.id}">${child.name}</option>`;
-        });
-        catOptions += `</optgroup>`;
-      } else {
-        catOptions += `<option value="${parent.id}">${parent.name}</option>`;
-      }
-    });
-    document.getElementById("category").innerHTML = catOptions;
 
     // Image previews
     document.getElementById("images").addEventListener("change", (e) => {
@@ -340,6 +364,109 @@
     const el = document.getElementById("error-msg");
     el.textContent = msg; el.style.display = "block";
   }
+
+  let allCats = [];
+  let categoryOpen = false;
+  const PREVIEW_COUNT = 5;
+
+  async function loadCategoryPicker() {
+    allCats = await api.getCategories();
+    renderCategoryList();
+  }
+
+  function renderCategoryList(expandedParent = null) {
+    const list = document.getElementById("category-list");
+    let html = "";
+
+    allCats.forEach(parent => {
+      html += `<div class="cat-parent-row">${parent.name}</div>`;
+
+      const children = parent.children || [];
+      const preview  = children.slice(0, PREVIEW_COUNT);
+      const rest     = children.slice(PREVIEW_COUNT);
+      const isExpanded = expandedParent === parent.id;
+
+      preview.forEach(child => {
+        html += `<div class="cat-child-row" id="child-${child.id}"
+                      onclick="selectCategory(${child.id}, '${child.name.replace(/'/g, "\\'")}')">
+                   ${child.name}
+                 </div>`;
+      });
+
+      if (rest.length && !isExpanded) {
+        html += `<div class="cat-see-more" onclick="expandParent(${parent.id}, event)">
+                   + See ${rest.length} more
+                 </div>`;
+      } else if (isExpanded) {
+        rest.forEach(child => {
+          html += `<div class="cat-child-row" id="child-${child.id}"
+                        onclick="selectCategory(${child.id}, '${child.name.replace(/'/g, "\\'")}')">
+                     ${child.name}
+                   </div>`;
+        });
+        html += `<div class="cat-see-more" onclick="event.stopPropagation();renderCategoryList()">
+                   − Show less
+                 </div>`;
+      }
+    });
+
+    list.innerHTML = html;
+
+    // Re-highlight selected
+    const val = document.getElementById("category").value;
+    if (val) {
+      const el = document.getElementById(`child-${val}`);
+      if (el) el.classList.add("selected");
+    }
+  }
+
+  function expandParent(parentId, event) {
+    if (event) event.stopPropagation();
+    renderCategoryList(parentId);
+    setTimeout(() => {
+      const rows = document.querySelectorAll(".cat-parent-row");
+      rows.forEach(r => {
+        if (r.textContent.trim() === allCats.find(c => c.id === parentId)?.name) {
+          r.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      });
+    }, 50);
+  }
+
+  function selectCategory(id, name) {
+    event.stopPropagation();
+    document.getElementById("category").value = id;
+    document.getElementById("category-selected-text").textContent = name;
+    document.getElementById("category-selected-text").style.color = "var(--text)";
+    document.getElementById("category-dropdown").style.display = "none";
+    document.getElementById("category-arrow").textContent = "▼";
+    categoryOpen = false;
+
+    document.querySelectorAll(".cat-child-row").forEach(el => el.classList.remove("selected"));
+    const el = document.getElementById(`child-${id}`);
+    if (el) el.classList.add("selected");
+  }
+
+  function toggleCategoryPicker() {
+    categoryOpen = !categoryOpen;
+    document.getElementById("category-dropdown").style.display = categoryOpen ? "block" : "none";
+    document.getElementById("category-arrow").textContent = categoryOpen ? "▲" : "▼";
+  }
+
+  async function submitAd() {
+    const title    = document.getElementById("title").value.trim();
+    const category = document.getElementById("category").value;
+  }
+
+  // Close picker when clicking outside
+  document.addEventListener("click", e => {
+    const picker = document.getElementById("category-picker");
+    if (picker && !picker.contains(e.target)) {
+      document.getElementById("category-dropdown").style.display = "none";
+      document.getElementById("category-arrow").textContent = "▼";
+      categoryOpen = false;
+    }
+  });
 </script>
 <footer class="footer">
   <div class="footer-inner">
