@@ -264,6 +264,9 @@ function updateNav() {
 }
 
 // ── Global spinner ────────────────────────────────────────────────────────────
+let pendingRequests = 0;
+let spinnerTimer    = null;
+
 function createSpinner() {
   if (document.getElementById("spinner-overlay")) return;
   const el = document.createElement("div");
@@ -275,15 +278,29 @@ function createSpinner() {
 
 function showSpinner() {
   createSpinner();
-  requestAnimationFrame(() => {
-    document.getElementById("spinner-overlay")?.classList.add("active");
-  });
+  pendingRequests++;
+
+  // Only show spinner if loading takes more than 1 second
+  if (!spinnerTimer) {
+    spinnerTimer = setTimeout(() => {
+      if (pendingRequests > 0) {
+        const el = document.getElementById("spinner-overlay");
+        if (el) el.classList.add("active");
+      }
+    }, 1000);
+  }
 }
 
 function hideSpinner() {
-  const el = document.getElementById("spinner-overlay");
-  if (!el) return;
-  el.classList.remove("active");
+  pendingRequests = Math.max(0, pendingRequests - 1);
+
+  // Only hide when ALL requests are done
+  if (pendingRequests === 0) {
+    clearTimeout(spinnerTimer);
+    spinnerTimer = null;
+    const el = document.getElementById("spinner-overlay");
+    if (el) el.classList.remove("active");
+  }
 }
 
 function renderDashboard(user) {
