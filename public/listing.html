@@ -168,22 +168,12 @@
          </div>`
       : `<div class="gallery-main">${l.category_icon || "📦"}</div>`;
 
-    const isPromoted = l.is_promoted && (!l.promoted_until || new Date(l.promoted_until) > new Date());
     const ownerActions = isOwner ? `
       <div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap">
         ${l.status === "active"
           ? `<button class="btn btn-ghost" onclick="markSold()">Mark as Sold</button>`
           : `<span class="badge badge-sold" style="padding:8px 16px">Sold</span>`}
         <a href="/edit-listing.html?id=${l.id}" class="btn btn-ghost">✏️ Edit</a>
-        ${l.status === "active" ? `
-          ${isPromoted
-            ? `<span style="background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;
-                           padding:8px 14px;border-radius:var(--radius);font-size:13px;font-weight:600">
-                ⭐ Featured until ${new Date(l.promoted_until).toLocaleDateString("en-KE")}
-               </span>`
-            : `<button class="btn btn-ghost" style="color:#f59e0b;border-color:#f59e0b"
-                       onclick="promoteListng()">⭐ Promote Listing</button>`
-          }` : ""}
         <button class="btn btn-ghost" style="color:#dc2626;border-color:#dc2626" onclick="deleteListing()">Delete</button>
       </div>` : "";
 
@@ -565,50 +555,6 @@
           </div>
         </div>
       </div>`;
-  }
-
-  // ── Promote listing ───────────────────────────────────────────────────────────
-  async function promoteListng() {
-    const modal = document.createElement("div");
-    modal.className = "modal-overlay";
-    modal.id = "promote-modal";
-    modal.innerHTML = `
-      <div class="modal" style="max-width:420px">
-        <h3>⭐ Promote Your Listing</h3>
-        <p>Promoted listings appear at the top of search results and category pages with a Featured badge for <strong>7 days</strong>.</p>
-        <div style="background:#fff8f0;border:1px solid #ffd4b3;border-radius:var(--radius);padding:16px;margin:16px 0">
-          <div style="font-weight:600;margin-bottom:8px">What you get:</div>
-          <div style="font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:6px">
-            <span>✅ Pinned to top of listings for 7 days</span>
-            <span>✅ ⭐ Featured badge on your listing card</span>
-            <span>✅ Gold border to stand out from other listings</span>
-            <span>✅ More visibility = more buyers</span>
-          </div>
-        </div>
-        <div style="text-align:center;font-size:13px;color:var(--muted);margin-bottom:16px">
-          This feature is currently <strong style="color:var(--success)">free</strong> during our beta period!
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-ghost" onclick="document.getElementById('promote-modal').remove()">Cancel</button>
-          <button class="btn btn-primary" id="confirm-promote-btn" onclick="confirmPromote()">⭐ Promote for Free</button>
-        </div>
-      </div>`;
-    document.body.appendChild(modal);
-    modal.addEventListener("click", e => { if (e.target === modal) modal.remove(); });
-  }
-
-  async function confirmPromote() {
-    const btn = document.getElementById("confirm-promote-btn");
-    btn.disabled = true; btn.textContent = "Promoting…";
-    try {
-      await api.promoteListing(id);
-      document.getElementById("promote-modal").remove();
-      toast("Your listing is now promoted! ⭐", "success");
-      setTimeout(() => location.reload(), 1000);
-    } catch (e) {
-      toast(e.message, "error");
-      btn.disabled = false; btn.textContent = "⭐ Promote for Free";
-    }
   }
 
   // ── Save / unsave ─────────────────────────────────────────────────────────────
