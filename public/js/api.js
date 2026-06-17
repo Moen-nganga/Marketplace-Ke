@@ -213,7 +213,7 @@ function timeAgo(dateStr) {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 function conditionLabel(val) {
-  return { new: "New", used_like_new: "Like New", used_good: "Good", used_fair: "Fair" }[val] || val;
+  return { new: "New", used_good: "Good", used_fair: "Fair" }[val] || val;
 }
 function renderStars(score, interactive = false, onRate = null) {
   return Array.from({ length: 5 }, (_, i) => {

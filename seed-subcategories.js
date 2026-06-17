@@ -14,31 +14,28 @@ async function seed() {
       // Feeding
       ["Pacifiers & Accessories",                "baby"],
       ["Bottle-Feeding Equipments",              "baby"],
-      ["Solid Feeding",                          "baby"],
       // Diapering
       ["Diaper Bags",                            "baby"],
       ["Disposable Diapers",                     "baby"],
-      ["Portbale Changing Pads",                 "baby"],
+      ["Wipers & Holders",                       "baby"],
       ["Cloth Diapers",                          "baby"],
       ["Changing Tables",                        "baby"],
-      ["Wipers & Holders",                       "baby"],
-      // Gear
+      ["Portbale Changing Pads",                 "baby"],
+      // Baby Gear
       ["Walkers",                                "baby"],
       ["Bagpacks & Carriers",                    "baby"],
-      ["Swings, Jumpers & Bouncers",             "baby"],
       // Baby Safety
       ["Monitors",                               "baby"],
       ["Sleep Positioners",                      "baby"],
-      ["Edge & Corner Guards",                   "baby"],
       // Baby & Toddler Toys
-      ["Building Toys",                          "baby"],
+      ["Toys",                                   "baby"],
       ["Toy Gift Sets",                          "baby"],
       ["Bath Toys",                              "baby"],
       // Sleeping And Nursery
       ["Baby Beds",                              "baby"],
       ["Baby Bedding",                           "baby"],
-      ["Nursery Beds",                           "baby"],
       ["Baby Mattresses",                        "baby"],
+      ["Nursery Beds",                           "baby"],
     ];
 
     for (const [name, icon] of babySubs) {
@@ -55,19 +52,13 @@ async function seed() {
     const supermarketId = supermarket.rows[0].id;
 
     const supermarketSubs = [
-      // Drinks
-      ["Beer, Wines & Spirits",          "shopping-bag"],
-      ["Carbonated Drinks",              "shopping-bag"],
-      ["Dairy",                          "shopping-bag"],
-      ["Water",                          "shopping-bag"],
-      ["Juice & Non Carbonated Drinks",  "shopping-bag"],
       // Household Supplies
       ["Air Fresheners",                 "shopping-bag"],
-      ["Bathroom Cleaners",              "shopping-bag"],
       ["Bulb & Batteries",               "shopping-bag"],
+      ["Laundry",                        "shopping-bag"],
       ["Floor Cleaners",                 "shopping-bag"],
       ["Kitchen Cleaners",               "shopping-bag"],
-      ["Laundry",                        "shopping-bag"],
+      ["Bathroom Cleaners",              "shopping-bag"],
       ["Paper & Rolls",                  "shopping-bag"],
       ["Household Cleaners & Sundries",  "shopping-bag"],
     ];
@@ -114,35 +105,31 @@ async function seed() {
     const computingId = computing.rows[0].id;
 
     const computingSubs = [
-      // Laptops
-      ["Netbooks",               "laptop"],
-      ["Notebooks",                  "laptop"],
-      ["Ultrabooks",                      "laptop"],
       // Computer Data Storage
       ["External Hard Drives",                "laptop"],
-      ["USB Flash Drives", "laptop"],
+      ["USB Flash Drives",                    "laptop"],
       // Laptop Brands
-      ["HP Laptops",         "laptop"],
-      ["Dell Laptops",           "laptop"],
-      ["Lenovo Laptops",              "laptop"],
-      ["Apple Laptops",            "laptop"],
-      ["Asus Laptops",            "laptop"],
+      ["HP Laptops",                          "laptop"],
+      ["Dell Laptops",                        "laptop"],
+      ["Lenovo Laptops",                      "laptop"],
+      ["Apple Laptops",                       "laptop"],
+      ["MacBook Laptops",                     "laptop"],
       // Computers & Accessories
-      ["Desktops",                  "laptop"],
-      ["Monitors",             "laptop"],
-      ["Laptop Accessories",            "laptop"],
-      ["Scanners",            "laptop"],
-      ["Printers",            "laptop"],
-      ["Keyboards & Mice",            "laptop"],
-      ["Computer Cable",            "laptop"],
-      ["Laptop Bags",            "laptop"],
+      ["Desktops",                            "laptop"],
+      ["Monitors",                            "laptop"],
+      ["Laptop Accessories",                  "laptop"],
+      ["Scanners",                            "laptop"],
+      ["Printers",                            "laptop"],
+      ["Keyboards & Mice",                    "laptop"],
+      ["Computer Cables",                     "laptop"],
+      ["Laptop Bags",                         "laptop"],
       // Computer Components
       ["Internal Hard Drive",               "laptop"],
-      ["Graphic Cards",       "laptop"],
-      ["Fans & Cooling",                "laptop"],
-      ["CPU Processors",       "laptop"],
+      ["Graphic Cards",                     "laptop"],
+      ["Fans & Cooling",                    "laptop"],
+      ["CPU Processors",                    "laptop"],
       // Refurb Corner
-      ["Refurbished Laptops",                      "laptop"],
+      ["Refurbished Laptops and Computers",               "laptop"],
     ];
 
     for (const [name, icon] of computingSubs) {
@@ -170,11 +157,11 @@ async function seed() {
       // Women's Clothing
       ["Dresses",                      "shirt"],
       ["Suits & Blazers",              "shirt"],
-      ["Tops & Trees",                 "shirt"],
+      ["Tops",                "shirt"],
       ["Coats, Jackets & Vests",         "shirt"],
       ["Jumpsuits, Rompers & Overalls",         "shirt"],
       ["Skirts",         "home"],
-      ["Lingerie, Sleep & Lounge",         "shirt"],
+      ["Lingerie",         "shirt"],
       ["Jeans",                        "shirt"],
       ["Shorts",                       "shirt"],
       // Kid's Clothing
@@ -245,13 +232,6 @@ async function seed() {
       ["Laundry Storage",          "home"],
       ["Racks & Shelves",          "home"],
       ["Baskets, Bins & Containers","home"],
-      // Top Brands
-      ["Sundabest",                "home"],
-      ["Nunix",                    "home"],
-      ["Rashnik",                  "home"],
-      ["NiceOne",                  "home"],
-      ["Ecoa",                     "home"],
-      ["Ailyons",                  "home"],
     ];
 
     for (const [name, icon] of homeSubs) {
@@ -272,35 +252,18 @@ async function seed() {
       ["iOS Phones",                 "smartphone"],
       ["Feature Phones",             "smartphone"],
       ["Refurbished Phones",         "smartphone"],
-      ["Smartphones under 10k",      "smartphone"],
-      ["Feature Phones Under 2,000", "smartphone"],
       ["Bluetooth Headsets",         "headphones"],
       ["Smart Watches",              "watch"],
       ["Cases & Sleeves",            "shield"],
       ["Portable Powerbanks",        "battery"],
       ["Batteries & Battery Packs",  "battery"],
-      ["Wall Chargers",              "plug"]
+      ["Wall Chargers",              "plug"],
       ["Headphones",                 "headphones"],
       ["Tripods",                    "camera"],
       ["Stands",                     "monitor"],
       ["Virtual Reality Headsets",   "gamepad-2"],
       ["Tablets",                    "tablet"],
       ["Tablet Accessories",         "tablet"],
-      ["Tablet Bags & Covers",       "shopping-bag"],
-      ["Samsung Phones",             "smartphone"],
-      ["Xiaomi Phones",              "smartphone"],
-      ["Itel Phones",                "smartphone"],
-      ["Tecno Phones",               "smartphone"],
-      ["Infinix Phones",             "smartphone"],
-      ["Huawei Phones",              "smartphone"],
-      ["Oppo Phones",                "smartphone"],
-      ["Samsung",                    "smartphone"],
-      ["Tecno",                      "smartphone"],
-      ["Xiaomi",                     "smartphone"],
-      ["Infinix",                    "smartphone"],
-      ["Oppo",                       "smartphone"],
-      ["Vivo",                       "smartphone"],
-      ["Itel",                       "smartphone"],
     ];
 
     for (const [name, icon] of phoneSubs) {
@@ -321,7 +284,7 @@ async function seed() {
       // Televisions
       ["Smart TVs",                  "tv"],
       ["Digital TVs",                "tv"],
-      ["Data Projectors",            "tv"],
+      ["Projectors",            "tv"],
       // Home Audio
       ["Home Theater Systems",       "music"],
       ["Sound Bars",                 "music"],
@@ -339,16 +302,6 @@ async function seed() {
       ["Digital SLR Cameras",        "camera"],
       ["Surveillance Cameras",       "camera"],
       ["Compact Cameras",            "camera"],
-      // Best Seller TV Brands
-      ["Vitron TV",                  "tv"],
-      ["Hikers",                     "tv"],
-      ["Skyworth",                   "tv"],
-      ["Vision Plus",                "tv"],
-      ["HiSense TV",                 "tv"],
-      ["Amtec",                      "tv"],
-      ["TCL TV",                     "tv"],
-      ["Royal",                      "tv"],
-      ["GLD",                        "tv"],
     ];
 
     for (const [name, icon] of tvSubs) {
@@ -381,17 +334,6 @@ async function seed() {
       ["Microwave & Ovens",           "plug"],
       ["Cookers",                     "plug"],
       ["Cooking Appliance Accessories","plug"],
-      // Best Seller Brands
-      ["LG",                          "plug"],
-      ["Midea",                       "plug"],
-      ["Ailyons",                     "plug"],
-      ["Roch",                        "plug"],
-      ["Nunix",                       "plug"],
-      ["Hisense",                     "plug"],
-      ["Ramtons",                     "plug"],
-      ["Von",                         "plug"],
-      ["Vitron",                      "plug"],
-      ["Skyworth",                    "plug"],
     ];
 
     for (const [name, icon] of applianceSubs) {
@@ -428,27 +370,16 @@ async function seed() {
       ["Eyes",                       "sparkles"],
       ["Lips",                       "sparkles"],
       ["Tools & Brushes",            "sparkles"],
-      ["Makeup Kits & Combos",       "sparkles"],
       // Health & Wellness
       ["Health Supplements",         "heart"],
       ["Sports nutrition",           "heart"],
-      ["Feminine care",              "heart"],
-      ["Sexual Wellness",            "heart"],
-      // Dermacosmetics
+      // Cosmetics
       ["Skin Care",                  "heart"],
       ["Hair Treatment",             "heart"],
-      // Personal Care
-      ["Body Lotions",               "heart"],
-      ["Roll-ons & Deodrants",       "heart"],
-      ["Shower Gels",                "heart"],
-      ["Shave & Hair Removal",       "scissors"],
       // Fragrances
-      ["Men's",                      "sparkles"],
-      ["Women's",                    "sparkles"],
-      ["Gift sets & combos",         "sparkles"],
-      ["Aroma Therapy",              "sparkles"],
+      ["Men's Perfumes",                      "sparkles"],
+      ["Women's Perfumes",                    "sparkles"],
       // Luxury Beauty
-      ["Fragrances",                 "sparkles"],
       ["Skincare",                   "heart"],
       ["Makeup",                     "sparkles"],
     ];
