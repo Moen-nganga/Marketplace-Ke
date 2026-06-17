@@ -67,7 +67,6 @@ function lucideIcon(name, size = 22) {
 
 async function apiFetch(path, options = {}) {
   const token = getToken();
-  showSpinner();
   try {
     const res = await fetch(`/api${path}`, {
       ...options,
@@ -84,8 +83,29 @@ async function apiFetch(path, options = {}) {
     }
 
     return res.json();
-  } finally {
-    hideSpinner();
+  } catch (e) {
+    throw e;
+  }
+}
+
+async function apiFetchSilent(path, options = {}) {
+  const token = getToken();
+  try {
+    const res = await fetch(`/api${path}`, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(options.headers || {}),
+      },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error(err.error || "Request failed");
+    }
+    return res.json();
+  } catch (e) {
+    throw e;
   }
 }
 

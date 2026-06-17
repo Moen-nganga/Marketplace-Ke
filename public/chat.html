@@ -266,12 +266,12 @@
   // ── Poll for new messages ────────────────────────────────────────────────────
   async function pollMessages() {
     try {
-      const { messages } = await api.getMessages(convId);
-      if (messages.length !== lastMsgCount) {
-        lastMsgCount = messages.length;
-        await renderMessages(messages);
+      const data = await apiFetchSilent(`/messages/${convId}`);
+      if (data.messages.length !== lastMsgCount) {
+        lastMsgCount = data.messages.length;
+        await renderMessages(data.messages);
         scrollToBottom();
-        api.markAsRead(convId).catch(() => {});
+        apiFetchSilent(`/messages/${convId}/read`, { method: "POST" }).catch(() => {});
         loadUnreadBadge();
       }
     } catch {}
@@ -386,8 +386,8 @@
     try {
       const { content, iv } = await encryptMessage(text, me.id, otherUser.id);
       await api.sendMessage(convId, { content, iv });
-      // Immediately re-fetch and render
-      const { messages } = await api.getMessages(convId);
+      // Immediately re-fetch silently
+      const { messages } = await apiFetchSilent(`/messages/${convId}`);
       lastMsgCount = messages.length;
       await renderMessages(messages);
       scrollToBottom();
