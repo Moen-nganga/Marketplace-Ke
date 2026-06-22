@@ -13,11 +13,12 @@ app.use("/uploads", express.static(path.join(__dirname, "../public/uploads")));
 app.use(express.static(path.join(__dirname, "../public")));
 
 // Handle all HTML pages
-app.get("*", (req, res) => {
-  const filePath = path.join(__dirname, "../public", req.path);
-  const fs = require("fs");
-  if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
-    res.sendFile(filePath);
+app.use((req, res, next) => {
+  if (req.path.startsWith("/api")) return next();
+  const fs   = require("fs");
+  const file = path.join(__dirname, "../public", req.path);
+  if (fs.existsSync(file) && fs.statSync(file).isFile()) {
+    res.sendFile(file);
   } else {
     res.sendFile(path.join(__dirname, "../public/index.html"));
   }
