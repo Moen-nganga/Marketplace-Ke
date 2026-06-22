@@ -7,3 +7,4 @@ seed-*.js
 clear-*.js
 reseed-*.js
 remove-*.js
+node_modules
