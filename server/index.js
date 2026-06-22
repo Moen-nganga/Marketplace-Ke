@@ -12,6 +12,17 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static(path.join(__dirname, "../public/uploads")));
 app.use(express.static(path.join(__dirname, "../public")));
 
+// Handle all HTML pages
+app.get("*", (req, res) => {
+  const filePath = path.join(__dirname, "../public", req.path);
+  const fs = require("fs");
+  if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+    res.sendFile(filePath);
+  } else {
+    res.sendFile(path.join(__dirname, "../public/index.html"));
+  }
+});
+
 // ── API Routes ────────────────────────────────────────────────────────────────
 app.use("/api/auth",            require("./routes/auth"));
 app.use("/api/listings",        require("./routes/listings"));

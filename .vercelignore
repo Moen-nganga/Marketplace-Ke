@@ -1,0 +1,9 @@
+node_modules
+.env
+*.db
+*.sqlite
+reset-*.js
+seed-*.js
+clear-*.js
+reseed-*.js
+remove-*.js
