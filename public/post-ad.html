@@ -275,8 +275,7 @@
     }
 
     btn.disabled = true;
-    btn.innerHTML = `<span class="btn-spinner"></span> Posting…`;
-    showSpinner();
+    btn.textContent = "Posting…";
 
     const fd = new FormData();
     fd.append("title",       title);

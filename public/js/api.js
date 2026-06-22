@@ -283,46 +283,6 @@ function updateNav() {
   }
 }
 
-// ── Global spinner ────────────────────────────────────────────────────────────
-let pendingRequests = 0;
-let spinnerTimer    = null;
-
-function createSpinner() {
-  if (document.getElementById("spinner-overlay")) return;
-  const el = document.createElement("div");
-  el.className = "spinner-overlay";
-  el.id        = "spinner-overlay";
-  el.innerHTML = `<div class="spinner"></div>`;
-  document.body.appendChild(el);
-}
-
-function showSpinner() {
-  createSpinner();
-  pendingRequests++;
-
-  // Only show spinner if loading takes more than 1 second
-  if (!spinnerTimer) {
-    spinnerTimer = setTimeout(() => {
-      if (pendingRequests > 0) {
-        const el = document.getElementById("spinner-overlay");
-        if (el) el.classList.add("active");
-      }
-    }, 1000);
-  }
-}
-
-function hideSpinner() {
-  pendingRequests = Math.max(0, pendingRequests - 1);
-
-  // Only hide when ALL requests are done
-  if (pendingRequests === 0) {
-    clearTimeout(spinnerTimer);
-    spinnerTimer = null;
-    const el = document.getElementById("spinner-overlay");
-    if (el) el.classList.remove("active");
-  }
-}
-
 function renderDashboard(user) {
   // Remove existing dashboard if any
   document.getElementById("dashboard-overlay")?.remove();
@@ -649,18 +609,3 @@ function updateDarkModeBtn() {
   btn.textContent  = isDark ? "☀️" : "🌙";
   btn.title        = isDark ? "Switch to light mode" : "Switch to dark mode";
 }
-
-// ── Show spinner on page links ────────────────────────────────────────────────
-document.addEventListener("DOMContentLoaded", () => {
-  document.addEventListener("click", e => {
-    const link = e.target.closest("a[href]");
-    if (!link) return;
-    const href = link.getAttribute("href");
-    // Only for internal page links, not # or external
-    if (href && !href.startsWith("#") && !href.startsWith("http") &&
-        !href.startsWith("mailto") && !href.startsWith("tel") &&
-        !href.startsWith("sms") && link.target !== "_blank") {
-      showSpinner();
-    }
-  });
-});
