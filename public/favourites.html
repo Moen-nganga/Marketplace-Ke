@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Favourites — Marketplace Ke/title>
+  <title>Favourites — Marketplace Ke</title>
   <link rel="stylesheet" href="/css/style.css" />
   <script>(function(){const t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)})();</script>
 </head>
@@ -13,6 +13,9 @@
   <div class="nav-inner">
     <a href="/" class="nav-logo">Marketplace Ke</a>
     <div id="nav-auth"></div>
+    <button class="nav-hamburger" id="nav-hamburger" onclick="toggleMobileNav()" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
   </div>
 </nav>
 
@@ -29,10 +32,16 @@
 </div>
 
 <div class="toast-container" id="toast-container"></div>
+
+<!-- api.js MUST load before any auth checks -->
 <script src="/js/api.js"></script>
 <script>
+  // Auth check runs immediately after api.js loads — no blank screen
+  if (!isLoggedIn()) {
+    window.location.href = "/login.html?next=" + encodeURIComponent(window.location.pathname);
+  }
+
   window.addEventListener("DOMContentLoaded", async () => {
-    if (!isLoggedIn()) { window.location.href = "/login.html"; return; }
     updateNav();
     await loadFavourites();
   });
@@ -48,7 +57,9 @@
         grid.innerHTML = `
           <div class="empty-state" style="grid-column:1/-1">
             <div class="icon">♡</div>
-            <h3>No favorites added</h3>
+            <h3>No favourites yet</h3>
+            <p>Browse listings and tap ♡ to save them here</p>
+            <a href="/" class="btn btn-primary" style="margin-top:16px">Browse Listings</a>
           </div>`;
         return;
       }
@@ -63,13 +74,18 @@
           <div class="listing-card" style="position:relative">
             <div class="card-img" onclick="window.location='/listing.html?id=${l.id}'" style="cursor:pointer">
               ${img}
-              ${l.status === "sold" ? `<div style="position:absolute;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center">
-                <span style="background:#ef4444;color:#fff;padding:6px 16px;border-radius:20px;font-weight:700;font-size:13px">SOLD</span>
-              </div>` : ""}
+              ${l.status === "sold" ? `
+                <div style="position:absolute;inset:0;background:rgba(0,0,0,.4);
+                            display:flex;align-items:center;justify-content:center">
+                  <span style="background:#ef4444;color:#fff;padding:6px 16px;
+                               border-radius:20px;font-weight:700;font-size:13px">SOLD</span>
+                </div>` : ""}
             </div>
             <div class="card-body">
-              <div class="card-price" onclick="window.location='/listing.html?id=${l.id}'" style="cursor:pointer">${formatPrice(l.price)}</div>
-              <div class="card-title" onclick="window.location='/listing.html?id=${l.id}'" style="cursor:pointer">${l.title}</div>
+              <div class="card-price" onclick="window.location='/listing.html?id=${l.id}'"
+                   style="cursor:pointer">${formatPrice(l.price)}</div>
+              <div class="card-title" onclick="window.location='/listing.html?id=${l.id}'"
+                   style="cursor:pointer">${l.title}</div>
               <div class="card-meta">
                 <span class="badge ${badge}">${l.status === "sold" ? "Sold" : conditionLabel(l.condition)}</span>
                 <span>📍 ${l.location}</span>
@@ -92,8 +108,9 @@
     try {
       await api.unsaveListing(id);
       toast("Removed from favourites", "success");
-      btn.closest(".listing-card").style.opacity = "0";
-      btn.closest(".listing-card").style.transition = "opacity .3s";
+      const card = btn.closest(".listing-card");
+      card.style.transition = "opacity .3s";
+      card.style.opacity = "0";
       setTimeout(loadFavourites, 350);
     } catch (e) { toast(e.message, "error"); }
   }
@@ -126,20 +143,18 @@
         <a href="/register.html">Register</a>
       </div>
       <div class="footer-col">
-        <!-- Categories -->
-<div class="footer-col">
-  <h4>Categories</h4>
-  <a href="/?cat=Phones%20%26%20Tablets">Phones & Tablets</a>
-  <a href="/?cat=TVs%20%26%20Audio">TVs & Audio</a>
-  <a href="/?cat=Appliances">Appliances</a>
-  <a href="/?cat=Health%20%26%20Beauty">Health & Beauty</a>
-  <a href="/?cat=Home%20%26%20Office">Home & Office</a>
-  <a href="/?cat=Fashion">Fashion</a>
-  <a href="/?cat=Computing">Computing</a>
-  <a href="/?cat=Gaming">Gaming</a>
-  <a href="/?cat=Supermarket">Supermarket</a>
-  <a href="/?cat=Baby%20Products">Baby Products</a>
-</div>
+        <h4>Categories</h4>
+        <a href="/?cat=Phones%20%26%20Tablets">Phones & Tablets</a>
+        <a href="/?cat=TVs%20%26%20Audio">TVs & Audio</a>
+        <a href="/?cat=Appliances">Appliances</a>
+        <a href="/?cat=Health%20%26%20Beauty">Health & Beauty</a>
+        <a href="/?cat=Home%20%26%20Office">Home & Office</a>
+        <a href="/?cat=Fashion">Fashion</a>
+        <a href="/?cat=Computing">Computing</a>
+        <a href="/?cat=Gaming">Gaming</a>
+        <a href="/?cat=Supermarket">Supermarket</a>
+        <a href="/?cat=Baby%20Products">Baby Products</a>
+      </div>
       <div class="footer-col">
         <h4>Help</h4>
         <a href="/safety-tips.html">Safety Tips</a>
