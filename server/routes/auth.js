@@ -67,7 +67,7 @@ router.post("/register", async (req, res) => {
     });
   } catch (e) {
     console.error("Register error:", e.message);
-    res.status(500).json({ error: "Something went wrong. Please try again." });
+    res.status(500).json({ error: "Invalid Email. Please try again." });
   }
 });
 
@@ -100,7 +100,7 @@ router.post("/login", async (req, res) => {
     });
   } catch (e) {
     console.error("Login error:", e.message);
-    res.status(500).json({ error: "Something went wrong. Please try again." });
+    res.status(500).json({ error: "Invalid Email. Please try again." });
   }
 });
 
