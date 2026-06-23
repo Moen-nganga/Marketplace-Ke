@@ -10,6 +10,10 @@ const { CloudinaryStorage } = require("multer-storage-cloudinary");
 
 const router = express.Router();
 
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key:    process.env.CLOUDINARY_API_KEY,
@@ -41,6 +45,8 @@ router.post("/register", async (req, res) => {
 
     if (!name || !email || !password)
       return res.status(400).json({ error: "Name, email and password are required" });
+    if (!isValidEmail(email))
+      return res.status(400).json({ error: "Please enter a valid email address" });
     if (password.length < 6)
       return res.status(400).json({ error: "Password must be at least 6 characters" });
 
@@ -78,6 +84,8 @@ router.post("/login", async (req, res) => {
 
     if (!email || !password)
       return res.status(400).json({ error: "Email and password are required" });
+    if (!isValidEmail(email))
+      return res.status(400).json({ error: "Please enter a valid email address" });
 
     const result = await pool.query("SELECT * FROM users WHERE email = $1", [email.toLowerCase().trim()]);
     const user   = result.rows[0];

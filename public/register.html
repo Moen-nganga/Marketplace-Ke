@@ -45,7 +45,7 @@
         <div style="flex:1;height:1px;background:var(--border)"></div>
       </div>
 
-      <div id="error-msg"
+       <div id="error-msg" style="display:none;color:#dc2626;background:#fee2e2;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:14px;"></div>
 
       <div class="form-group">
         <label>Full name</label>
@@ -90,6 +90,9 @@
 
     document.getElementById("error-msg").style.display = "none";
     if (!name || !email || !password) { showError("Please fill in all required fields."); return; }
+
+    if (!name || !email || !password) { showError("Please fill in all fields."); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showError("Please enter a valid email address."); return; }
 
     btn.disabled = true;
     btn.textContent = "Creating account…";

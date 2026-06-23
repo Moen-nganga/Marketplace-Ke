@@ -123,8 +123,18 @@
         avatar: params.get("avatar") || null,
       };
       saveAuth(token, user);
+      // Clean the URL immediately so refresh doesn't re-trigger login
+      window.history.replaceState({}, document.title, "/login.html");
       window.location.href = "/";
       return;
+    }
+
+    if (error === "cancelled") showError("Login was cancelled.");
+    if (error === "failed")    showError("Google login failed. Please try again.");
+
+    // Clean error params from URL so refresh shows clean login page
+    if (error) {
+      window.history.replaceState({}, document.title, "/login.html");
     }
 
     if (error === "cancelled") showError("Login was cancelled.");
@@ -144,16 +154,21 @@
 
     document.getElementById("error-msg").style.display = "none";
     if (!email || !password) { showError("Please fill in all fields."); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showError("Please enter a valid email address."); return; }
 
-    btn.disabled = true;
+    btn.disabled    = true;
     btn.textContent = "Logging in…";
+
     try {
       const { token, user } = await api.login({ email, password });
       saveAuth(token, user);
       window.location.href = "/";
     } catch (e) {
       showError(e.message);
-      btn.disabled = false; btn.textContent = "Log In";
+    } finally {
+      // Always re-enable button whether success or failure
+      btn.disabled    = false;
+      btn.textContent = "Log In";
     }
   }
 
