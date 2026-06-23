@@ -106,6 +106,10 @@
 
 <script src="/js/api.js"></script>
 <script>
+  // Auth check runs immediately after api.js loads — no blank screen
+  if (!isLoggedIn()) {
+    window.location.href = "/login.html?next=" + encodeURIComponent(window.location.pathname);
+  }
   const params     = new URLSearchParams(location.search);
   const profileId  = parseInt(params.get("id"));
   const me         = getUser();
