@@ -163,8 +163,6 @@ const api = {
 };
 
 // ── Encryption (AES-GCM) ─────────────────────────────────────────────────────
-// A per-conversation key is derived from both user IDs so only participants
-// can decrypt. Nothing secret ever leaves the browser unencrypted.
 async function getConvKey(user1_id, user2_id) {
   const raw    = `conv-${Math.min(user1_id, user2_id)}-${Math.max(user1_id, user2_id)}`;
   const enc    = new TextEncoder();
@@ -228,8 +226,114 @@ function renderStars(score, interactive = false, onRate = null) {
     return `<span class="star ${filled ? "filled" : ""}">★</span>`;
   }).join("");
 }
+
+// ── Mobile nav drawer ─────────────────────────────────────────────────────────
+function initMobileNav() {
+  // Only inject once, and only if not already in the DOM
+  if (document.getElementById("mobile-nav-overlay")) return;
+
+  const overlay = document.createElement("div");
+  overlay.className = "mobile-nav-overlay";
+  overlay.id = "mobile-nav-overlay";
+  overlay.onclick = closeMobileNav;
+
+  const drawer = document.createElement("div");
+  drawer.className = "mobile-nav-drawer";
+  drawer.id = "mobile-nav-drawer";
+  drawer.innerHTML = `
+    <div class="mobile-drawer-header">
+      <span class="mobile-drawer-logo">Marketplace Ke</span>
+      <button class="mobile-drawer-close" onclick="closeMobileNav()">✕</button>
+    </div>
+    <div class="mobile-drawer-auth" id="mobile-drawer-auth"></div>
+    <nav class="mobile-drawer-nav">
+      <a href="/">🏠 &nbsp;Home</a>
+      <a href="/post-ad.html">➕ &nbsp;Post an Ad</a>
+      <a href="/favourites.html">❤️ &nbsp;Favourites</a>
+      <a href="/my-listings.html">📦 &nbsp;My Listings</a>
+      <a href="/inbox.html">✉️ &nbsp;Messages</a>
+      <a href="/profile.html">👤 &nbsp;Profile</a>
+      <a href="/safety-tips.html">🛡️ &nbsp;Safety Tips</a>
+      <a href="/how-it-works.html">❓ &nbsp;How it Works</a>
+    </nav>
+    <div class="mobile-drawer-footer" id="mobile-drawer-footer"></div>`;
+
+  document.body.appendChild(overlay);
+  document.body.appendChild(drawer);
+}
+
+function populateMobileDrawerAuth() {
+  const authEl   = document.getElementById("mobile-drawer-auth");
+  const footerEl = document.getElementById("mobile-drawer-footer");
+  if (!authEl) return;
+
+  const user = getUser();
+
+  if (user) {
+    // Logged in: show user info in drawer header area
+    authEl.innerHTML = `
+      <div class="mobile-drawer-user">
+        <div class="avatar-circle" style="width:42px;height:42px;font-size:18px;flex-shrink:0">
+          ${user.name[0].toUpperCase()}
+        </div>
+        <div class="user-info">
+          <div class="name">${user.name}</div>
+          <div class="email">${user.email || ""}</div>
+        </div>
+      </div>`;
+    footerEl.innerHTML = `
+      <button class="btn btn-ghost btn-full"
+              style="color:#dc2626;border-color:#dc2626"
+              onclick="logout(); closeMobileNav();">
+        Logout
+      </button>`;
+  } else {
+    // Logged out: show Login + Register
+    authEl.innerHTML = `
+      <div style="padding:0 16px 16px; display:flex; flex-direction:column; gap:10px; border-bottom:1px solid var(--border)">
+        <a href="/login.html" class="btn btn-ghost btn-full">Login</a>
+        <a href="/register.html" class="btn btn-primary btn-full">Register</a>
+      </div>`;
+    footerEl.innerHTML = "";
+  }
+}
+
+function toggleMobileNav() {
+  const drawer  = document.getElementById("mobile-nav-drawer");
+  const overlay = document.getElementById("mobile-nav-overlay");
+  const burger  = document.getElementById("nav-hamburger");
+  if (!drawer) return;
+
+  const isOpen = drawer.classList.contains("open");
+  if (isOpen) {
+    closeMobileNav();
+  } else {
+    populateMobileDrawerAuth();
+    drawer.classList.add("open");
+    overlay.style.display = "block";
+    requestAnimationFrame(() => overlay.classList.add("open"));
+    if (burger) burger.classList.add("open");
+    document.body.style.overflow = "hidden";
+  }
+}
+
+function closeMobileNav() {
+  const drawer  = document.getElementById("mobile-nav-drawer");
+  const overlay = document.getElementById("mobile-nav-overlay");
+  const burger  = document.getElementById("nav-hamburger");
+  if (!drawer) return;
+  drawer.classList.remove("open");
+  overlay.classList.remove("open");
+  if (burger) burger.classList.remove("open");
+  document.body.style.overflow = "";
+  setTimeout(() => { overlay.style.display = "none"; }, 280);
+}
+
+// ── updateNav ─────────────────────────────────────────────────────────────────
 function updateNav() {
   initDarkMode();
+  initMobileNav();          // inject drawer into DOM on every page
+
   const user    = getUser();
   const navAuth = document.getElementById("nav-auth");
   if (!navAuth) return;
@@ -238,14 +342,14 @@ function updateNav() {
     navAuth.innerHTML = `
       <a href="/post-ad.html" class="btn btn-primary">+ Post Ad</a>`;
 
-    // Add menu button fixed to far left
+    // Fixed left-side dashboard menu button (desktop)
     if (!document.getElementById("dashboard-menu-btn")) {
       const menuBtn = document.createElement("button");
       menuBtn.id        = "dashboard-menu-btn";
       menuBtn.className = "btn btn-ghost";
       menuBtn.style.cssText = `
         position: fixed; left: 0; top: 0;
-        height: 70px; width: 64px;
+        height: 60px; width: 56px;
         border-radius: 0; border: none;
         border-right: 1px solid var(--border);
         z-index: 1001;
@@ -264,11 +368,14 @@ function updateNav() {
     loadNotifBadge();
     renderDashboard(user);
   } else {
+    // Logged out: show Login/Register on desktop; hamburger handles mobile
     navAuth.innerHTML = `
       <button id="dark-mode-btn" class="btn btn-ghost" style="padding:9px 14px;font-size:16px"
               onclick="toggleDarkMode()" title="Toggle dark mode">🌙</button>
-      <a href="/login.html" class="btn btn-ghost">Login</a>
-      <a href="/register.html" class="btn btn-primary">Register</a>`;
+      <span class="desktop-auth-btns">
+        <a href="/login.html" class="btn btn-ghost">Login</a>
+        <a href="/register.html" class="btn btn-primary">Register</a>
+      </span>`;
   }
 
   // Sync avatar
@@ -284,7 +391,6 @@ function updateNav() {
 }
 
 function renderDashboard(user) {
-  // Remove existing dashboard if any
   document.getElementById("dashboard-overlay")?.remove();
   document.getElementById("dashboard-sidebar")?.remove();
 
@@ -305,12 +411,9 @@ function renderDashboard(user) {
   sidebar.className = "dashboard-sidebar";
   sidebar.id        = "dashboard-sidebar";
   sidebar.innerHTML = `
-    <!-- Header -->
-    <<div class="dashboard-header">
+    <div class="dashboard-header">
       <span class="logo">Marketplace Ke</span>
     </div>
-
-    <!-- User info -->
     <div class="dashboard-user">
       ${avatar}
       <div class="user-info">
@@ -318,76 +421,57 @@ function renderDashboard(user) {
         <div class="email">${user.email}</div>
       </div>
     </div>
-
-    <!-- Nav items -->
     <div class="dashboard-nav">
-
       <div class="dashboard-section-label">Navigation</div>
-
       <a href="/" class="dashboard-nav-item">
         <div class="nav-icon">🏠</div>
         <span class="dashboard-nav-label">Home</span>
       </a>
-
       <a href="/post-ad.html" class="dashboard-nav-item">
         <div class="nav-icon">➕</div>
         <span class="dashboard-nav-label">Post an Ad</span>
       </a>
-
       <div class="dashboard-divider"></div>
       <div class="dashboard-section-label">My Account</div>
-
       <a href="/profile.html?id=${user.id}" class="dashboard-nav-item">
         <div class="nav-icon">👤</div>
         <span class="dashboard-nav-label">My Profile</span>
       </a>
-
       <a href="/my-listings.html" class="dashboard-nav-item">
         <div class="nav-icon">📋</div>
         <span class="dashboard-nav-label">My Listings</span>
       </a>
-
       <a href="/favourites.html" class="dashboard-nav-item">
         <div class="nav-icon">♥</div>
         <span class="dashboard-nav-label">Favourites</span>
       </a>
-
       <a href="/inbox.html" class="dashboard-nav-item" id="dash-inbox">
         <div class="nav-icon">💬</div>
         <span class="dashboard-nav-label">Inbox</span>
         <span class="dashboard-nav-badge" id="dash-msg-badge" style="display:none"></span>
       </a>
-
       <a href="/notifications.html" class="dashboard-nav-item" id="dash-notif">
         <div class="nav-icon">🔔</div>
         <span class="dashboard-nav-label">Notifications</span>
         <span class="dashboard-nav-badge" id="dash-notif-badge" style="display:none"></span>
       </a>
-
       <div class="dashboard-divider"></div>
       <div class="dashboard-section-label">Settings</div>
-
       <a class="dashboard-nav-item" onclick="toggleDarkMode()" style="cursor:pointer">
         <div class="nav-icon" id="dash-theme-icon">🌙</div>
         <span class="dashboard-nav-label" id="dash-theme-label">Dark Mode</span>
       </a>
-
       <div class="dashboard-divider"></div>
       <div class="dashboard-section-label">Help</div>
-
       <a href="/safety-tips.html" class="dashboard-nav-item">
         <div class="nav-icon">🛡️</div>
         <span class="dashboard-nav-label">Safety Tips</span>
       </a>
-
       <a href="/how-it-works.html" class="dashboard-nav-item">
         <div class="nav-icon">❓</div>
         <span class="dashboard-nav-label">How it Works</span>
       </a>
-
     </div>
-
-    <!-- Footer -->
     <div class="dashboard-footer">
       <button class="btn btn-ghost btn-full" onclick="logout()"
               style="color:#dc2626;border-color:#dc2626">
@@ -398,16 +482,13 @@ function renderDashboard(user) {
   document.body.appendChild(overlay);
   document.body.appendChild(sidebar);
 
-  // Update badges inside dashboard
   updateDashboardBadges();
 
-  // Highlight active page
   const path = window.location.pathname;
   sidebar.querySelectorAll(".dashboard-nav-item").forEach(item => {
     if (item.getAttribute("href") === path) item.classList.add("active");
   });
 
-  // Update dark mode label
   const isDark = document.documentElement.getAttribute("data-theme") === "dark";
   const themeIcon  = document.getElementById("dash-theme-icon");
   const themeLabel = document.getElementById("dash-theme-label");
@@ -468,10 +549,12 @@ async function updateDashboardBadges() {
     }
   } catch {}
 }
+
 function logout() {
   clearAuth();
   window.location.href = "/";
 }
+
 function toast(msg, type = "success") {
   const c = document.getElementById("toast-container");
   if (!c) return;
@@ -480,14 +563,14 @@ function toast(msg, type = "success") {
   c.appendChild(t);
   setTimeout(() => t.remove(), 3500);
 }
+
 async function loadUnreadBadge() {
   if (!isLoggedIn()) return;
   try {
     const { count } = await api.getUnreadCount();
-    // Update dashboard badge
     const dashBadge = document.getElementById("dash-msg-badge");
     if (dashBadge) {
-      dashBadge.textContent  = count > 9 ? "9+" : count;
+      dashBadge.textContent   = count > 9 ? "9+" : count;
       dashBadge.style.display = count > 0 ? "" : "none";
     }
   } catch {}
@@ -519,17 +602,10 @@ async function toggleNotifPanel() {
 
   try {
     const { notifications } = await api.getNotifications();
-
-    // Mark all as read
     await api.markNotifsRead();
-    // Remove badge
-    const badge = document.querySelector("#notif-btn + .notif-badge, #notif-btn ~ .notif-badge");
-    if (badge) badge.remove();
+
     const wrap = document.querySelector("#notif-btn")?.parentElement;
-    if (wrap) {
-      const b = wrap.querySelector(".notif-badge");
-      if (b) b.remove();
-    }
+    if (wrap) { const b = wrap.querySelector(".notif-badge"); if (b) b.remove(); }
 
     if (!notifications.length) {
       panel.innerHTML = `
@@ -541,7 +617,6 @@ async function toggleNotifPanel() {
     }
 
     const icons = { view: "👁", rating: "⭐", message: "💬" };
-
     panel.innerHTML = `
       <div style="padding:12px 16px;border-bottom:1px solid var(--border);font-weight:600;font-size:14px">
         Notifications
@@ -567,7 +642,6 @@ async function toggleNotifPanel() {
     panel.innerHTML = `<div style="padding:16px;color:red;font-size:13px">${e.message}</div>`;
   }
 
-  // Close panel when clicking outside
   setTimeout(() => {
     document.addEventListener("click", function closePanel(e) {
       if (!panel.contains(e.target) && e.target.id !== "notif-btn") {
@@ -591,11 +665,9 @@ function toggleDarkMode() {
   document.documentElement.setAttribute("data-theme", next);
   localStorage.setItem("theme", next);
   updateDarkModeBtn();
-  // Update menu icon color for new theme
   const isOpen = document.getElementById("dashboard-sidebar")?.classList.contains("open");
   const btn    = document.getElementById("dashboard-menu-btn");
   if (btn) btn.innerHTML = isOpen ? getCloseIcon() : getMenuIcon();
-  // Update dashboard theme label
   const themeIcon  = document.getElementById("dash-theme-icon");
   const themeLabel = document.getElementById("dash-theme-label");
   if (themeIcon)  themeIcon.textContent  = next === "dark" ? "☀️" : "🌙";
@@ -606,6 +678,6 @@ function updateDarkModeBtn() {
   const btn = document.getElementById("dark-mode-btn");
   if (!btn) return;
   const isDark = document.documentElement.getAttribute("data-theme") === "dark";
-  btn.textContent  = isDark ? "☀️" : "🌙";
-  btn.title        = isDark ? "Switch to light mode" : "Switch to dark mode";
+  btn.textContent = isDark ? "☀️" : "🌙";
+  btn.title       = isDark ? "Switch to light mode" : "Switch to dark mode";
 }
