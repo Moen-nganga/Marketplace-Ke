@@ -79,10 +79,47 @@
 <body>
 
 <nav class="navbar">
+  <nav class="navbar">
   <div class="nav-inner">
     <a href="/" class="nav-logo">Marketplace Ke</a>
+    <div class="nav-search">
+      <input type="text" placeholder="Search listings…" />
+      <button>Search</button>
+    </div>
     <div id="nav-auth"></div>
+    <!-- Hamburger (mobile only) -->
+    <button class="nav-hamburger" id="nav-hamburger" onclick="toggleMobileNav()" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
   </div>
+</nav>
+
+<!-- Mobile drawer overlay -->
+<div class="mobile-nav-overlay" id="mobile-nav-overlay" onclick="closeMobileNav()"></div>
+
+<!-- Mobile drawer -->
+<div class="mobile-nav-drawer" id="mobile-nav-drawer">
+  <div class="mobile-drawer-header">
+    <span class="mobile-drawer-logo">Marketplace Ke</span>
+    <button class="mobile-drawer-close" onclick="closeMobileNav()">✕</button>
+  </div>
+  <div class="mobile-drawer-search">
+    <input type="text" id="drawer-search-input" placeholder="Search listings…" />
+    <button onclick="drawerSearch()">Go</button>
+  </div>
+  <div class="mobile-drawer-auth" id="mobile-drawer-auth">
+    <!-- filled by JS -->
+  </div>
+  <nav class="mobile-drawer-nav" id="mobile-drawer-nav">
+    <a href="/">🏠 <span>Home</span></a>
+    <a href="/post-ad.html">➕ <span>Post an Ad</span></a>
+    <a href="/favourites.html">❤️ <span>Favourites</span></a>
+    <a href="/my-listings.html">📦 <span>My Listings</span></a>
+    <a href="/inbox.html">✉️ <span>Messages</span></a>
+    <a href="/profile.html">👤 <span>Profile</span></a>
+  </nav>
+  <div class="mobile-drawer-footer" id="mobile-drawer-footer"></div>
+</div>
 </nav>
 
 <!-- Category hero -->
