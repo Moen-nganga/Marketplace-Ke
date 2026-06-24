@@ -90,19 +90,38 @@
 
     document.getElementById("error-msg").style.display = "none";
     if (!name || !email || !password) { showError("Please fill in all required fields."); return; }
-
-    if (!name || !email || !password) { showError("Please fill in all fields."); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showError("Please enter a valid email address."); return; }
 
-    btn.disabled = true;
+    btn.disabled    = true;
     btn.textContent = "Creating account…";
+
     try {
-      const { token, user } = await api.register({ name, email, phone, password });
-      saveAuth(token, user);
-      window.location.href = "/";
+      const data = await api.register({ name, email, phone, password });
+
+      if (data.requiresVerification) {
+        // Show success message instead of logging in
+        document.querySelector(".form-card").innerHTML = `
+          <div style="text-align:center;padding:20px 0">
+            <div style="font-size:56px;margin-bottom:16px">📧</div>
+            <h2 style="margin-bottom:8px">Check your email!</h2>
+            <p style="color:var(--muted);font-size:15px;line-height:1.6;margin-bottom:20px">
+              We sent a verification link to <strong>${email}</strong>.<br>
+              Click the link in the email to activate your account.
+            </p>
+            <p style="color:var(--muted);font-size:13px">
+              Didn't receive it? Check your spam folder or
+              <a href="/register.html" style="color:var(--brand)">try again</a>.
+            </p>
+            <a href="/login.html" class="btn btn-ghost" style="margin-top:20px;display:inline-block">
+              Go to Login
+            </a>
+          </div>`;
+      }
     } catch (e) {
       showError(e.message);
-      btn.disabled = false; btn.textContent = "Create Account";
+    } finally {
+      btn.disabled    = false;
+      btn.textContent = "Create Account";
     }
   }
 

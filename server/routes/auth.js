@@ -7,6 +7,8 @@ const pool     = require("../db/postgres");
 const { requireAuth } = require("../middleware/auth");
 const cloudinary             = require("cloudinary").v2;
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const crypto = require("crypto");
+const { sendVerificationEmail } = require("../utils/mailer");
 
 const router = express.Router();
 
@@ -50,30 +52,75 @@ router.post("/register", async (req, res) => {
     if (password.length < 6)
       return res.status(400).json({ error: "Password must be at least 6 characters" });
 
-    const existing = await pool.query("SELECT id FROM users WHERE email = $1", [email.toLowerCase().trim()]);
+    const existing = await pool.query(
+      "SELECT id FROM users WHERE email = $1",
+      [email.toLowerCase().trim()]
+    );
     if (existing.rows.length)
       return res.status(409).json({ error: "This email is already registered. Please log in instead." });
 
-    const hashed = await bcrypt.hash(password, 10);
+    const hashed      = await bcrypt.hash(password, 10);
+    const verifyToken = crypto.randomBytes(32).toString("hex");
+    const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    const result = await pool.query(`
+      INSERT INTO users (name, email, phone, password, is_verified, verify_token, verify_token_expires)
+      VALUES ($1, $2, $3, $4, false, $5, $6)
+      RETURNING *
+    `, [name, email.toLowerCase().trim(), phone || null, hashed, verifyToken, tokenExpiry]);
+
+    const user = result.rows[0];
+
+    // Send verification email
+    const baseUrl = process.env.BASE_URL || `https://marketplace-ke.vercel.app`;
+    await sendVerificationEmail(email, name, verifyToken, baseUrl);
+
+    res.status(201).json({
+      success: true,
+      message: "Account created! Please check your email to verify your account.",
+      requiresVerification: true,
+    });
+  } catch (e) {
+    console.error("Register error:", e.message);
+    res.status(500).json({ error: "Invalid Email. Please try again." });
+  }
+});
+
+// ── GET /api/auth/verify ──────────────────────────────────────────────────────
+router.get("/verify", async (req, res) => {
+  const { token } = req.query;
+  if (!token) return res.redirect("/login.html?error=invalid_token");
+
+  try {
     const result = await pool.query(
-      "INSERT INTO users (name, email, phone, password) VALUES ($1, $2, $3, $4) RETURNING *",
-      [name, email.toLowerCase().trim(), phone || null, hashed]
+      "SELECT * FROM users WHERE verify_token = $1 AND verify_token_expires > NOW()",
+      [token]
     );
 
-    const user  = result.rows[0];
-    const token = jwt.sign(
+    if (!result.rows.length)
+      return res.redirect("/login.html?error=token_expired");
+
+    const user = result.rows[0];
+
+    // Mark as verified and clear token
+    await pool.query(`
+      UPDATE users
+      SET is_verified = true, verify_token = NULL, verify_token_expires = NULL
+      WHERE id = $1
+    `, [user.id]);
+
+    // Issue JWT so user is automatically logged in
+    const jwt_token = jwt.sign(
       { id: user.id, name: user.name, email: user.email },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
 
-    res.status(201).json({
-      token,
-      user: { id: user.id, name: user.name, email: user.email, phone: user.phone },
-    });
+    // Redirect to login page with token to auto-login
+    res.redirect(`/login.html?token=${jwt_token}&name=${encodeURIComponent(user.name)}&email=${encodeURIComponent(user.email)}&id=${user.id}&avatar=${encodeURIComponent(user.avatar || "")}&verified=true`);
   } catch (e) {
-    console.error("Register error:", e.message);
-    res.status(500).json({ error: "Invalid Email. Please try again." });
+    console.error("Verify error:", e.message);
+    res.redirect("/login.html?error=failed");
   }
 });
 
@@ -96,6 +143,18 @@ router.post("/login", async (req, res) => {
     if (!(await bcrypt.compare(password, user.password)))
       return res.status(401).json({ error: "Incorrect password" });
 
+    if (!user)
+      return res.status(404).json({ error: "No account found with this email address" });
+
+    if (!(await bcrypt.compare(password, user.password)))
+      return res.status(401).json({ error: "Incorrect password" });
+
+    // Check if verified
+    if (!user.is_verified)
+      return res.status(403).json({
+        error: "Please verify your email before logging in. Check your inbox for the verification link.",
+        requiresVerification: true,
+      });
     const token = jwt.sign(
       { id: user.id, name: user.name, email: user.email },
       process.env.JWT_SECRET,

@@ -129,8 +129,19 @@
       return;
     }
 
-    if (error === "cancelled") showError("Login was cancelled.");
-    if (error === "failed")    showError("Google login failed. Please try again.");
+    if (error === "cancelled")    showError("Login was cancelled.");
+    if (error === "failed")       showError("Google login failed. Please try again.");
+    if (error === "invalid_token") showError("Invalid verification link.");
+    if (error === "token_expired") showError("Verification link has expired. Please register again.");
+
+    const verified = params.get("verified");
+    if (verified) {
+      const msg = document.getElementById("error-msg");
+      msg.style.display     = "block";
+      msg.style.background  = "#f0fdf4";
+      msg.style.color       = "#166534";
+      msg.textContent       = " Email verified! You are now logged in.";
+    }
 
     // Clean error params from URL so refresh shows clean login page
     if (error) {
