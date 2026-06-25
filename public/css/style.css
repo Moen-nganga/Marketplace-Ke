@@ -300,7 +300,8 @@ h1,h2,h3,h4 { font-family: 'Bebas Neue', sans-serif; font-weight: 400; line-heig
 
 /* ── Hero ────────────────────────────────────────────────────────────────────── */
 .hero {
-  background: linear-gradient(135deg, var(--brand) 0%, #f5914a 100%);
+  background: linear-gradient(rgba(0,0,0,.45), rgba(0,0,0,.45)),
+              url('/images/hero-bg.jpg') center/cover no-repeat;
   color: #fff;
   padding: 44px 20px 40px;
   text-align: center;

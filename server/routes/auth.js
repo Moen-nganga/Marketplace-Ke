@@ -7,8 +7,6 @@ const pool     = require("../db/postgres");
 const { requireAuth } = require("../middleware/auth");
 const cloudinary             = require("cloudinary").v2;
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
-const crypto = require("crypto");
-const { sendVerificationEmail } = require("../utils/mailer");
 
 const router = express.Router();
 
