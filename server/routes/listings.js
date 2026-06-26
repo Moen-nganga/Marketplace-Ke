@@ -312,8 +312,19 @@ router.get("/:id", optionalAuth, async (req, res) => {
 router.post("/", requireAuth, upload.array("images", 6), async (req, res) => {
   const { title, description, price, condition, category_id, location, reason, tags } = req.body;
 
+  console.log("BODY:", { title, description, price, condition, category_id, location });
+
   if (!title || !description || !price || !condition || !category_id || !location)
-    return res.status(400).json({ error: "All fields are required" });
+    return res.status(400).json({ 
+      error: `Missing fields: ${[
+        !title && "title",
+        !description && "description", 
+        !price && "price",
+        !condition && "condition",
+        !category_id && "category_id",
+        !location && "location"
+      ].filter(Boolean).join(", ")}`
+    });
 
   const images = (req.files || []).map(f => f.path);
 
