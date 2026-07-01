@@ -120,7 +120,20 @@ const api = {
   // ── Listings ──────────────────────────────────────────────────────────────
   getListings:     (params = {}) => apiFetch(`/listings?${new URLSearchParams(params)}`),
   getListing:      (id)          => apiFetch(`/listings/${id}`),
-  createListing:   (fd)          => apiFetch("/listings", { method: "POST", body: fd }),
+createListing:   (data)         => {
+    const token = getToken();
+    return fetch("/api/listings", {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: data,
+    }).then(async res => {
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: res.statusText }));
+        throw new Error(err.error || "Request failed");
+      }
+      return res.json();
+    });
+  },
   updateListing:   (id, body)    => apiFetch(`/listings/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   deleteListing:   (id)          => apiFetch(`/listings/${id}`, { method: "DELETE" }),
   getUserListings: (uid)         => apiFetch(`/listings/user/${uid}`),
@@ -424,34 +437,34 @@ function renderDashboard(user) {
     <div class="dashboard-nav">
       <div class="dashboard-section-label">Navigation</div>
       <a href="/" class="dashboard-nav-item">
-        <div class="nav-icon">🏠</div>
+        <div class="nav-icon"></div>
         <span class="dashboard-nav-label">Home</span>
       </a>
       <a href="/post-ad.html" class="dashboard-nav-item">
-        <div class="nav-icon">➕</div>
+        <div class="nav-icon"></div>
         <span class="dashboard-nav-label">Post an Ad</span>
       </a>
       <div class="dashboard-divider"></div>
       <div class="dashboard-section-label">My Account</div>
       <a href="/profile.html?id=${user.id}" class="dashboard-nav-item">
-        <div class="nav-icon">👤</div>
+        <div class="nav-icon"></div>
         <span class="dashboard-nav-label">My Profile</span>
       </a>
       <a href="/my-listings.html" class="dashboard-nav-item">
-        <div class="nav-icon">📋</div>
+        <div class="nav-icon"></div>
         <span class="dashboard-nav-label">My Listings</span>
       </a>
       <a href="/favourites.html" class="dashboard-nav-item">
-        <div class="nav-icon">♥</div>
+        <div class="nav-icon"></div>
         <span class="dashboard-nav-label">Favourites</span>
       </a>
       <a href="/inbox.html" class="dashboard-nav-item" id="dash-inbox">
-        <div class="nav-icon">💬</div>
+        <div class="nav-icon"></div>
         <span class="dashboard-nav-label">Inbox</span>
         <span class="dashboard-nav-badge" id="dash-msg-badge" style="display:none"></span>
       </a>
       <a href="/notifications.html" class="dashboard-nav-item" id="dash-notif">
-        <div class="nav-icon">🔔</div>
+        <div class="nav-icon"></div>
         <span class="dashboard-nav-label">Notifications</span>
         <span class="dashboard-nav-badge" id="dash-notif-badge" style="display:none"></span>
       </a>
@@ -464,11 +477,11 @@ function renderDashboard(user) {
       <div class="dashboard-divider"></div>
       <div class="dashboard-section-label">Help</div>
       <a href="/safety-tips.html" class="dashboard-nav-item">
-        <div class="nav-icon">🛡️</div>
+        <div class="nav-icon"></div>
         <span class="dashboard-nav-label">Safety Tips</span>
       </a>
       <a href="/how-it-works.html" class="dashboard-nav-item">
-        <div class="nav-icon">❓</div>
+        <div class="nav-icon"></div>
         <span class="dashboard-nav-label">How it Works</span>
       </a>
     </div>

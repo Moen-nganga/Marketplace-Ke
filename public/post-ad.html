@@ -191,7 +191,6 @@
     await loadCategoryPicker();
 
     // Load categories with subcategories
-    // Load categories with subcategories
 
     // Image previews
     document.getElementById("images").addEventListener("change", (e) => {
@@ -228,23 +227,6 @@
       r.readAsDataURL(file);
     });
   }
-
-    const box = document.getElementById("image-previews");
-    box.innerHTML = "";
-
-    selectedFiles.forEach((file, index) => {
-      const r = new FileReader();
-      r.onload = e => {
-        const d = document.createElement("div");
-        d.className = "preview-thumb";
-        d.innerHTML = `
-          <img src="${e.target.result}" />
-          <button type="button" class="preview-remove" onclick="removeImage(${index})">×</button>`;
-        box.appendChild(d);
-      };
-      r.readAsDataURL(file);
-    });
-  
 
   function removeImage(index) {
     selectedFiles.splice(index, 1);
