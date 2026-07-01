@@ -299,17 +299,7 @@ h1,h2,h3,h4 { font-family: 'Bebas Neue', sans-serif; font-weight: 400; line-heig
 .cat-chip .label { font-size: 11px; font-weight: 600; }
 
 /* ── Hero ────────────────────────────────────────────────────────────────────── */
-.hero {
-  background: linear-gradient(rgba(0,0,0,.45), rgba(0,0,0,.45)),
-              url('/images/hero-bg.jpg') center/cover no-repeat;
-  color: #fff;
-  padding: 44px 20px 40px;
-  text-align: center;
-  border-radius: 0 0 20px 20px;
-  overflow: visible;
-  position: relative;
-  z-index: 1;
-}
+.hero { background: linear-gradient(135deg, var(--brand) 0%, #f5914a 100%); color: #fff; padding: 44px 20px 40px; text-align: center; border-radius: 0 0 20px 20px; overflow: visible; position: relative; z-index: 1; }
 .hero h1 { font-size: clamp(26px, 5vw, 42px); margin-bottom: 8px; }
 .hero p   { font-size: 16px; opacity: .9; margin-bottom: 24px; }
 .hero-search {
