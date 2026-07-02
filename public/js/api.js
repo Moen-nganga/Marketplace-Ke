@@ -115,7 +115,20 @@ const api = {
   login:           (body) => apiFetch("/auth/login",    { method: "POST", body: JSON.stringify(body) }),
   me:              ()     => apiFetch("/auth/me"),
   getPublicUser:   (id)   => apiFetch(`/auth/user/${id}`),
-  uploadAvatar:    (fd)   => apiFetch("/auth/avatar", { method: "POST", body: fd }),
+  uploadAvatar: (fd) => {
+  const token = getToken();
+  return fetch("/api/auth/avatar", {
+    method: "POST",
+    headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    body: fd,
+  }).then(async res => {
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error(err.error || "Request failed");
+    }
+    return res.json();
+  });
+},
 
   // ── Listings ──────────────────────────────────────────────────────────────
   getListings:     (params = {}) => apiFetch(`/listings?${new URLSearchParams(params)}`),
@@ -470,7 +483,6 @@ function renderDashboard(user) {
       <div class="dashboard-divider"></div>
       <div class="dashboard-section-label">Help</div>
       <a href="/safety-tips.html" class="dashboard-nav-item">
-        <div class="nav-icon"></div>
         <span class="dashboard-nav-label">Safety Tips</span>
       </a>
       <a href="/how-it-works.html" class="dashboard-nav-item">
