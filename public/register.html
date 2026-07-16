@@ -90,7 +90,7 @@
 
     document.getElementById("error-msg").style.display = "none";
     if (!name || !email || !password) { showError("Please fill in all required fields."); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showError("Please enter a valid email address."); return; }
+    if (!email.includes("@") || !email.includes(".")) { showError("Please enter a valid email address."); return; }
 
     btn.disabled    = true;
     btn.textContent = "Creating account…";
